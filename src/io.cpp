@@ -2,6 +2,8 @@
 #include "search.hpp"
 #include "engine_settings.hpp"
 #include <math.h>
+#include <inttypes.h>
+
 
 static std::mutex stdout_mutex;
 
@@ -28,7 +30,7 @@ namespace anka {
 		//	result.depth, result.best_score, result.total_time, result.total_nodes,
 		//	result.nps);
 
-		printf("info depth %d time %lld nodes %llu nps %llu score ",
+		printf("info depth %d time %lld nodes %" PRIu64 " nps %" PRIu64 " score ",
 			result.depth, result.total_time, result.total_nodes,
 			result.nps);
 		

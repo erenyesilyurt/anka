@@ -1,7 +1,7 @@
 #include "perft.hpp"
 #include "movegen.hpp"
 #include "timer.hpp"
-
+#include <inttypes.h>
 
 namespace anka {
 
@@ -39,7 +39,7 @@ namespace anka {
 		if (depth == 1) {
 			for (int i = 0; i < list.length; i++) {
 				move::ToString(list.moves[i].move, move_str);
-				fprintf(stdout, "%s: %llu\n", move_str, (long long)1);
+				fprintf(stdout, "%s: %d\n", move_str, 1);
 			}
 			num_nodes += list.length;
 		}
@@ -48,7 +48,7 @@ namespace anka {
 				pos.MakeMove(list.moves[i].move);
 				u64 num_branch_nodes = perft(pos, depth - 1);
 				move::ToString(list.moves[i].move, move_str);
-				fprintf(stdout, "%s: %llu\n", move_str, num_branch_nodes);
+				fprintf(stdout, "%s: %" PRIu64 "\n", move_str, num_branch_nodes);
 				num_nodes += num_branch_nodes;
 				pos.UndoMove();
 			}
@@ -56,12 +56,12 @@ namespace anka {
 		auto end_time = Timer::GetTimeInMs();
 
 		auto time_in_ms = end_time - start_time;
-		auto time_in_seconds = time_in_ms / 1000.0f;
-		u64 nodes_per_sec = num_nodes / time_in_seconds;
-		std::cout << "\nNodes searched: " << num_nodes << "\n";
-		std::cout << "Time(s): " << time_in_seconds << "\n";
-		std::cout << "Nodes/second: " << nodes_per_sec << "\n" << std::endl;
-		//fprintf(stdout, "\nNodes searched: %llu\n", num_nodes);
+		//auto time_in_seconds = static_cast<long long>(time_in_ms / 1000.0f);
+		u64 nodes_per_sec = num_nodes / (time_in_ms / 1000.0);
+		printf("\nNodes searched: %" PRIu64 "\n", num_nodes);
+		printf("\nTime(s): %f\n", (time_in_ms/1000.0));
+		printf("Nodes/second: %" PRIu64 "\n", nodes_per_sec);
+
 		return num_nodes;
 	}
 }

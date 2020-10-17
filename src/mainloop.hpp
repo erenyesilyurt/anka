@@ -7,8 +7,10 @@
 #include "evaluation.hpp"
 #include "search.hpp"
 #include "ttable.hpp"
-#include <future>
 #include "io.hpp"
+#include <future>
+#include <string.h>
+
 
 namespace anka {
 

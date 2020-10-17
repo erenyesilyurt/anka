@@ -268,7 +268,7 @@ namespace anka {
                 result.depth = d;
                 result.total_time = end_time - params.start_time + 1;
                 result.total_nodes += instance.nodes_visited;
-                result.nps = instance.nodes_visited / (result.total_time / 1000.0f);
+                result.nps = instance.nodes_visited / (result.total_time / 1000.0);
                 result.pv_length = trans_table.GetPrincipalVariation(pos, principal_variation, EngineSettings::PV_BUFFER_LENGTH);
                 //ANKA_ASSERT(result.pv_length > 0);
                 result.pv = principal_variation;

@@ -3,7 +3,10 @@
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+Anka.make
+Makefile
 
+premake5
 premake5.exe
 TODO.txt
 bin/

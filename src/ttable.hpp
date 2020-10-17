@@ -4,6 +4,7 @@
 #include "move.hpp"
 #include "gamestate.hpp"
 #include "movegen.hpp"
+#include <string.h>
 
 namespace anka {
 

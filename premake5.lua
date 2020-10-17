@@ -62,3 +62,10 @@ workspace "AnkaEngine"
 			{
 				"pthread"
 			}
+
+			buildoptions 
+			{
+				"-mlzcnt",
+				"-mpopcnt",
+				"-mbmi"
+			}

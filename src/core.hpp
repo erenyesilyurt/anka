@@ -25,7 +25,7 @@ typedef int16_t i16;
 #endif
 
 #if defined(__GNUG__)
-#define force_inline __attribute__((always_inline))
+#define force_inline __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
 #define force_inline __forceinline
 #else
