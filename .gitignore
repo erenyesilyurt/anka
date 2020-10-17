@@ -4,6 +4,7 @@
 *.vcxproj.filters
 *.vcxproj.user
 
+premake5.exe
 TODO.txt
 bin/
 build_files/
