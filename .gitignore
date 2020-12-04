@@ -1,9 +1,11 @@
 .vs/
+.vscode/
 *.sln
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
 Anka.make
+MagicGenerator.make
 Makefile
 
 premake5

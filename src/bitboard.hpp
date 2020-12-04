@@ -99,8 +99,8 @@ namespace anka {
 			Bitboard result = C64(0);
 
 			// eg: if selection is 0x00..00101, the first and the third 1's in bitboard will be kept
-			int num_bitboard = PopCount(bitboard);
-			for (int i = 0; i < num_bitboard; i++) {
+			int num_bits = PopCount(bitboard);
+			for (int i = 0; i < num_bits; i++) {
 				int bit_index = PopBit(bitboard);
 				if (BitIsSet(selection, i)) {
 					SetBit(result, bit_index);

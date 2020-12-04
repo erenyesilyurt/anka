@@ -158,8 +158,9 @@ namespace anka {
 		extern Bitboard _pawn_attacks[2][64];
 		extern Bitboard _in_between[64][64];
 
-
 		void InitAttacks();
+		Bitboard RookAttacksSlow(Square sq, Bitboard relevant_occ);
+		Bitboard BishopAttacksSlow(Square sq, Bitboard relevant_occ);
 
 		template <int side>
 		force_inline Bitboard PawnAttacks(Square sq)

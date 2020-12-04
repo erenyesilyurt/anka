@@ -12,7 +12,7 @@ namespace anka {
 		Bitboard _pawn_attacks[2][64];
 		Bitboard _in_between[64][64];
 
-		static Bitboard RookAttacksSlow(Square sq, Bitboard relevant_occ)
+		Bitboard RookAttacksSlow(Square sq, Bitboard relevant_occ)
 		{
 			Bitboard attack_map{};
 			int origin = square::Square64To120(sq);
@@ -33,7 +33,7 @@ namespace anka {
 			return attack_map;
 		}
 
-		static Bitboard BishopAttacksSlow(Square sq, Bitboard relevant_occ)
+		Bitboard BishopAttacksSlow(Square sq, Bitboard relevant_occ)
 		{
 			Bitboard attack_map = C64(0);
 			int origin = square::Square64To120(sq);
