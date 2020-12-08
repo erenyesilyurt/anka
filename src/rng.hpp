@@ -24,6 +24,11 @@ namespace anka {
             s[1] = x;
         }
 
+        force_inline double rand()
+        {
+            std::uniform_real_distribution<double> distribution(0.0, 1.0);
+            return distribution(*this);
+        }
 
         force_inline u64 rand64() { return next(); }
         force_inline u64 rand64_sparse() { return (next() & next() & next()); }
