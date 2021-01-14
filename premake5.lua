@@ -24,10 +24,75 @@ workspace "AnkaEngine"
 			"src/**.cpp",
 			"src/**.hpp"
 		}
+		removefiles
+		{
+			"src/magic_generator/**.cpp",
+			"src/magic_generator/**.hpp"
+		}
 		
 		
 		targetdir ("bin/%{cfg.buildcfg}")
 		objdir ("build_files/%{cfg.buildcfg}")
+		
+		
+		includedirs
+		{
+			"src"
+		}
+		
+		filter "configurations:Debug"
+			defines {"ANKA_DEBUG"}
+			runtime "Debug"
+			symbols "on"
+		
+		
+		filter "configurations:Release"
+			runtime "Release"
+			optimize "Speed"
+			intrinsics "on"
+			flags
+			{
+				"LinkTimeOptimization"
+			}
+			
+		filter "system:windows"
+			defines
+			{
+				"_CRT_SECURE_NO_WARNINGS"
+			}
+			systemversion "latest"
+		
+		filter "system:not windows"
+			links
+			{
+				"pthread"
+			}
+
+			buildoptions 
+			{
+				"-mlzcnt",
+				"-mpopcnt",
+				"-mbmi"
+			}
+
+	project "MagicGenerator"
+		kind "ConsoleApp"
+		language "C++"
+		cppdialect "C++17"
+		staticruntime "on"
+		
+		files
+		{
+			"src/magic_generator/generate_magics.cpp",
+			"src/attacks.cpp",
+			"src/attacks.hpp",
+			"src/bitboard.hpp",
+			"src/rng.hpp"
+		}
+		
+		
+		targetdir ("bin/%{cfg.buildcfg}/magic_gen")
+		objdir ("build_files/%{cfg.buildcfg}/magic_gen")
 		
 		
 		includedirs
