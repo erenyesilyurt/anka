@@ -6,7 +6,7 @@
 namespace anka {
 	namespace attacks {
 
-		Bitboard _slider_attacks[89524];
+		Bitboard _slider_attacks[115084];
 		Bitboard _knight_attacks[64];
 		Bitboard _king_attacks[64];
 		Bitboard _pawn_attacks[2][64];

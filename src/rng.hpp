@@ -32,8 +32,12 @@ namespace anka {
 
         force_inline u64 rand64() { return next(); }
         force_inline u64 rand64_sparse() { return (next() & next() & next()); }
+
+        // possibly bugged
         force_inline u64 rand64(u64 min, u64 max)
         {
+            if (min >= max)
+                return max;
             u64 mask = UINT64_MAX;
             u64 range = max - min;
 

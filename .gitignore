@@ -11,5 +11,8 @@ Makefile
 premake5
 premake5.exe
 TODO.txt
+found_magics.txt
 bin/
 build_files/
+x64/
+
