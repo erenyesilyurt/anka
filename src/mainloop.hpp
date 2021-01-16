@@ -17,82 +17,16 @@ namespace anka {
 	extern TransposTable trans_table;
 
 	namespace uci {
-		enum class CommandType {
-			invalid_cmd, debug, uci, isready, setoption, ucinewgame, position, go, stop, ponderhit, quit, registr,
-			anka_print, anka_perft, anka_eval
-		};
+		//enum class CommandType {
+		//	invalid_cmd, debug, uci, isready, setoption, ucinewgame, position, go, stop, ponderhit, quit, registr,
+		//	anka_print, anka_perft, anka_eval
+		//};
 
-		struct UciCommand {
-			CommandType type = CommandType::invalid_cmd;
-			char* value = nullptr;
-		};
+		//struct UciCommand {
+		//	CommandType type = CommandType::invalid_cmd;
+		//	char* value = nullptr;
+		//};
 
-		//UciCommand ParseCommandType(char *line);
-
-
-
-		inline Move ParseMove(const GameState& pos, const char* line)
-		{
-			auto move_str_len = strlen(line);
-			if (move_str_len < 4 || move_str_len > 5)
-				return 0;
-
-			char move_str[6];
-			strcpy(move_str, line);
-			
-
-			if (move_str[0] > 'h' || move_str[0] < 'a')
-				return 0;
-
-			if (move_str[1] > '8' || move_str[1] < '1')
-				return 0;
-
-			if (move_str[2] > 'h' || move_str[2] < 'a')
-				return 0;
-
-			if (move_str[3] > '8' || move_str[3] < '1')
-				return 0;
-
-			Square from = square::RankFileToSquare(move_str[1] - '1', move_str[0] - 'a');
-			Square to = square::RankFileToSquare(move_str[3] - '1', move_str[2] - 'a');
-
-			ANKA_ASSERT(from >= 0 && from < 64);
-			ANKA_ASSERT(to >= 0 && to < 64);
-
-			MoveList<256> list;
-			list.GenerateLegalMoves(pos);
-
-			// find the matching move from possible moves and return it
-			for (int i = 0; i < list.length; i++) {
-				Move move = list.moves[i].move;
-				if (move::FromSquare(move) == from && move::ToSquare(move) == to) {
-					if (move::IsPromotion(move)) {
-						if (move_str_len != 5)
-							return 0;
-
-						PieceType promoted = move::PromotedPiece(move);
-						if (promoted == piece_type::ROOK && move_str[4] == 'r') {
-							return move;
-						}
-						else if (promoted == piece_type::BISHOP && move_str[4] == 'b') {
-							return move;
-						}
-						else if (promoted == piece_type::QUEEN && move_str[4] == 'q') {
-							return move;
-						}
-						else if (promoted == piece_type::KNIGHT && move_str[4] == 'n') {
-							return move;
-						}
-						else {
-							return 0;
-						}
-					}
-					return move;
-				}
-			}
-
-			return 0;
-		}
 
 		inline void OnUci()
 		{
@@ -114,23 +48,18 @@ namespace anka {
 
 		inline void OnIsReady()
 		{
-			io::PrintToStdout("readyok\n");
+			printf("readyok\n");
 		}
 
 		inline void OnSetOption(EngineSettings &options, char* line)
 		{
-			// skip next word (name)
-			line = strtok(NULL, " ");
+			// skip next word ("name ")
+			line += 5;
 
-			if (strcmp(line, "name") != 0)
-				return;
-
-			char *option_name = strtok(NULL, " ");
-
-			if (strcmp(option_name, "Hash") == 0) {
-				option_name = strtok(NULL, " ");
-				char* val = strtok(NULL, " ");
-				int size = atoi(val);
+			// ex: setoption name Hash value 64
+			if (strncmp(line, "Hash value ", 11) == 0) {
+				line += 11;
+				int size = atoi(line);
 				if (size >= EngineSettings::MIN_HASH_SIZE && size <= EngineSettings::MAX_HASH_SIZE) {
 
 					options.hash_size = size;
@@ -139,21 +68,19 @@ namespace anka {
 					}
 				}
 			}
-			else if (strcmp(option_name, "Threads") == 0) {
-				option_name = strtok(NULL, " ");
-				char* val = strtok(NULL, " ");
-				int num_threads = atoi(val);
+			else if (strncmp(line, "Threads value ", 14) == 0) {
+				line += 14;
+				int num_threads = atoi(line);
 				if (num_threads >= EngineSettings::MIN_NUM_THREADS && num_threads <= EngineSettings::MAX_NUM_THREADS) {
 					options.num_threads = num_threads;
 				}
 			}
-			else if (strcmp(option_name, "Nullmove") == 0) {
-				option_name = strtok(NULL, " ");
-				char* val = strtok(NULL, " ");
-				if (strcmp(val, "true") == 0) {
+			else if (strncmp(line, "Nullmove value ", 15) == 0)  {
+				line += 15;
+				if (strncmp(line, "true", 4) == 0) {
 					options.null_move_pruning = true;
 				}
-				else if (strcmp(val, "false") == 0) {
+				else if (strncmp(line, "false", 5) == 0) {
 					options.null_move_pruning = false;
 				}
 			}
@@ -162,13 +89,12 @@ namespace anka {
 
 		inline void OnPosition(GameState &pos, char* line)
 		{
-			line = strtok(NULL, " ");
-			// * position [fen <fenstring> | startpos ]  moves <move1> .... <movei>
-			if (strcmp(line, "startpos") == 0) {
+			// ex: position [fen <fenstring> | startpos ]  moves <move1> .... <movei>
+			if (strncmp(line, "startpos", 8) == 0) {
 				pos.LoadStartPosition();
-				line += 9;
+				line += 8;
 			}
-			else if (strcmp(line, "fen") == 0) {
+			else if (strncmp(line, "fen", 3) == 0) {
 				line += 4;
 				if (!pos.LoadPosition(line))
 					return;
@@ -177,16 +103,16 @@ namespace anka {
 				return;
 			}
 
-			char* moves_loc = strstr(line, "moves");
+			line = strstr(line, "moves");
 
 			// parse moves
-			if (moves_loc) {
-				moves_loc += 6;
-				line = strtok(moves_loc, " ");
+			if (line) {
+				line+= 6;
+				line = strtok(line, " ");
 				while (line) {
-					Move move = ParseMove(pos, line);
+					Move move = pos.ParseMove(line);
 					if (move == 0) {
-						io::PrintToStdout("Failed to parse position input.\n");
+						fprintf(stderr, "AnkaError(MainLoop): Failed to parse position input.\n");
 						pos.LoadStartPosition();
 						return;
 					}
@@ -200,74 +126,81 @@ namespace anka {
 		}
 
 		inline void OnGo(GameState &root_pos, char* line, SearchParams &params)
-		{
-
-			// TODO: support restricted search moves
-			// TODO: support ponder
-			// TODO: support mate search
-			// TODO: support movestogo
-			// TODO: support node limit
-			
+		{			
 			params.Clear();
-			params.infinite = false;
-			params.is_searching_flag = true;
-			while (true) {
-				line = strtok(NULL, " ");
-				if (!line)
-					break;
-				if (strcmp(line, "infinite") == 0) {
-					params.infinite = true;
-					std::thread t(IterativeDeepening, std::ref(root_pos), std::ref(params));
-					t.detach();
-					return;
-				}
-				else if (strcmp(line, "wtime") == 0) {
-					line = strtok(NULL, " ");
-					int val = atoi(line);
-					if (val > 0)
-						params.wtime = val;
-				}
-				else if (strcmp(line, "btime") == 0) {
-					line = strtok(NULL, " ");
-					int val = atoi(line);
-					if (val > 0)
-						params.btime = val;
-				}
-				else if (strcmp(line, "winc") == 0) {
-					line = strtok(NULL, " ");
-					int val = atoi(line);
-					if (val > 0)
-						params.winc = val;
-				}
-				else if (strcmp(line, "binc") == 0) {
-					line = strtok(NULL, " ");
-					int val = atoi(line);
-					if (val > 0)
-						params.binc = val;
-				}
-				else if (strcmp(line, "depth") == 0) {
-					line = strtok(NULL, " ");
-					int val = atoi(line);
-					if (val > 0)
-						params.search_depth = val;
-				}
-				else if (strcmp(line, "movetime") == 0) {
-					line = strtok(NULL, " ");
-					int val = atoi(line);
-					if (val > 0)
-						params.movetime = val;
-				}
+			params.infinite = true;
+
+			const char* pch = strstr(line, "infinite");
+			if (pch) {
+				IterativeDeepening(root_pos, params);
+				return;
+			}
+			else {
+				params.infinite = false;
 			}
 
-			std::thread t(IterativeDeepening, std::ref(root_pos), std::ref(params));
-			t.detach();
+			pch = strstr(line, "depth ");
+			if (pch) {
+				pch += 6;
+				int val = atoi(pch);
+				if (val > 0)
+					params.search_depth = val;
+			}
 
+			pch = strstr(line, "movetime ");
+			if (pch) {
+				pch += 9;
+				int val = atoi(pch);
+				if (val > 0)
+					params.movetime = val;
+				IterativeDeepening(root_pos, params);
+				return;
+			}
+
+			pch = strstr(line, "movestogo ");
+			if (pch) {
+				pch += 10;
+				int val = atoi(pch);
+				if (val > 0)
+					params.movestogo = val;
+			}
+
+			pch = strstr(line, "wtime ");
+			if (pch) {
+				pch += 6;
+				int val = atoi(pch);
+				if (val > 0)
+					params.wtime = val;
+			}
+
+			pch = strstr(line, "winc ");
+			if (pch) {
+				pch += 5;
+				int val = atoi(pch);
+				if (val > 0)
+					params.winc = val;
+			}
+
+			pch = strstr(line, "btime ");
+			if (pch) {
+				pch += 6;
+				int val = atoi(pch);
+				if (val > 0)
+					params.btime = val;
+			}
+
+			pch = strstr(line, "binc ");
+			if (pch) {
+				pch += 5;
+				int val = atoi(pch);
+				if (val > 0)
+					params.binc = val;
+			}
+
+
+			IterativeDeepening(root_pos, params);
 		}
 
-		inline void OnQuit()
-		{
-
-		}
 
 		inline void OnPrint(GameState &pos)
 		{
@@ -276,7 +209,6 @@ namespace anka {
 
 		inline void OnPerft(GameState& pos, char *line)
 		{
-			line = strtok(NULL, " ");
 			int depth = atoi(line);
 
 			if (depth == 0) {

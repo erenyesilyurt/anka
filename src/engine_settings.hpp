@@ -22,9 +22,9 @@ namespace anka {
 		bool null_move_pruning = true;
 	};
 
-	inline constexpr int INFINITE = EngineSettings::MAX_SCORE;
-	inline constexpr int LOWER_MATE_THRESHOLD = -INFINITE + EngineSettings::MAX_DEPTH;
-	inline constexpr int UPPER_MATE_THRESHOLD = INFINITE - EngineSettings::MAX_DEPTH;
+	inline constexpr int ANKA_INFINITE = EngineSettings::MAX_SCORE;
+	inline constexpr int LOWER_MATE_THRESHOLD = -ANKA_INFINITE + EngineSettings::MAX_DEPTH;
+	inline constexpr int UPPER_MATE_THRESHOLD = ANKA_INFINITE - EngineSettings::MAX_DEPTH;
 
 	struct SearchParams {
 		bool infinite = true;
@@ -40,8 +40,8 @@ namespace anka {
 		int search_depth = 0;
 
 		bool check_timeup = false;
-		bool is_searching_flag = false;
 		bool uci_stop_flag = false;
+		bool uci_quit_flag = false;
 
 		void Clear()
 		{
@@ -57,8 +57,9 @@ namespace anka {
 			movestogo = 0;
 			search_depth = 0;
 
-			is_searching_flag = false;
 			uci_stop_flag = false;
+			uci_quit_flag = false;
+			check_timeup = false;
 		}
 	};
 

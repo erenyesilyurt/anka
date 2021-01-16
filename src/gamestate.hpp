@@ -186,8 +186,9 @@ namespace anka {
 		bool LoadStartPosition() { return LoadPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 		bool LoadPosition(std::string fen);
 
-		void Print();
-		void PrintBitboards();
+		Move ParseMove(const char* line) const;
+		void Print() const;
+		void PrintBitboards() const;
 	private:
 		/* BITBOARDS
 		0: White pieces

@@ -57,9 +57,8 @@ namespace anka {
         int Quiescence(GameState& pos, int alpha, int beta, SearchParams& params);
         int AlphaBeta(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
         int PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
-        int PVSRoot(GameState& pos, int alpha, int beta, int depth, SearchParams& params, Move &best_move);
     private:
-        bool IsTimeUp(SearchParams& params);
+        void CheckStopConditions(SearchParams& params);
 	}; // SearchInstance
 
 
