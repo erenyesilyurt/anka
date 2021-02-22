@@ -43,18 +43,6 @@ namespace anka {
         return (available_time / num_remaining);
     }
 
-    // If there is only one legal move in position, sets it. Returns legal move count.
-    static int CountLegalMoves(const GameState& pos, Move &one_legal_move)
-    {
-        MoveList<256> list;
-        list.GenerateLegalMoves(pos);
-        if (list.length == 1) {
-            one_legal_move = list.moves[0].move;
-        }
-        
-        return list.length;
-    }
-
     // fail-soft PVS
     int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params)
     {
@@ -62,11 +50,8 @@ namespace anka {
 
         int old_alpha = alpha;
 
-        if (params.check_timeup) {
-            if ((nodes_visited & 4095) == 0) {
-                if (IsTimeUp(params))
-                    params.uci_stop_flag = true;
-            }
+        if ((nodes_visited & 4095) == 0) {
+            CheckStopConditions(params);
         }
 
         if (pos.HalfMoveClock() >= 100 || pos.IsRepetition()) {
@@ -109,8 +94,8 @@ namespace anka {
 
         if (list.length == 0) {
             if (in_check) {
-                //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(-INFINITE, alpha, beta));
-                return -INFINITE;
+                //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(-ANKA_INFINITE, alpha, beta));
+                return -ANKA_INFINITE;
             }
             else {
                 //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(0, alpha, beta));
@@ -202,24 +187,23 @@ namespace anka {
     void IterativeDeepening(GameState& pos, SearchParams& params)
     {
         params.start_time = Timer::GetTimeInMs();
-        params.check_timeup = false;
 
         bool skip_search = false;
         char best_move_str[6];
 
         // check if there is only one legal move in position
-        Move one_legal_move = 0;
-        int num_moves_in_root = CountLegalMoves(pos, one_legal_move);
-        ANKA_ASSERT(num_moves_in_root >= 0);
-        if (num_moves_in_root < 2) {
-            if (num_moves_in_root == 1) {
-                principal_variation[0] = one_legal_move;
-            }
-            else {
+        {
+            MoveList<256> move_list;
+            move_list.GenerateLegalMoves(pos);
+            if (move_list.length == 0) {
                 principal_variation[0] = 0;
             }
-
-            skip_search = true;
+            else {
+                principal_variation[0] = move_list.moves[0].move;
+                if (move_list.length == 1) {
+                    skip_search = true;
+                }
+            }    
         }
 
 
@@ -228,7 +212,7 @@ namespace anka {
             // start with an initial search regardless of time controls so we always have something in pv
             SearchInstance initial_search;
             constexpr int initial_search_depth = 3;
-            initial_search.AlphaBeta(pos, -INFINITE, INFINITE, initial_search_depth, params);
+            initial_search.AlphaBeta(pos, -ANKA_INFINITE, ANKA_INFINITE, initial_search_depth, params);
             TTResult initial_probe{};
             trans_table.Get(pos.PositionKey(), initial_probe);
             principal_variation[0] = initial_probe.move;
@@ -254,7 +238,7 @@ namespace anka {
                 SearchInstance instance;
                 instance.last_timecheck = params.start_time;
 
-                int best_score = instance.PVS(pos, -INFINITE, INFINITE, d, params);
+                int best_score = instance.PVS(pos, -ANKA_INFINITE, ANKA_INFINITE, d, params);
                 auto end_time = Timer::GetTimeInMs();
 
                 if (params.uci_stop_flag) {
@@ -288,9 +272,7 @@ namespace anka {
             best_move_str[3] = '0';
             best_move_str[4] = '\0';
         }
-        io::PrintToStdout("bestmove %s\n", best_move_str);
-
-        params.Clear(); // params.is_searching_flag = false;
+        printf("bestmove %s\n", best_move_str);
     }
 
 
@@ -302,11 +284,8 @@ namespace anka {
         //io::IndentedPrint(pos.SearchDepth(), "QS %c alpha %d beta %d\n", side_char[pos.SideToPlay()], alpha, beta);
 
         ANKA_ASSERT(beta > alpha);
-        if (params.check_timeup) {
-            if ((nodes_visited & 4095) == 0) {
-                if (IsTimeUp(params))
-                    params.uci_stop_flag = true;
-            }
+        if ((nodes_visited & 4095) == 0) {
+            CheckStopConditions(params);
         }
         
      
@@ -321,7 +300,7 @@ namespace anka {
         if (in_check) {
             list.GenerateLegalMoves(pos); // all check evasion moves
             if (list.length == 0) {
-                return -INFINITE;
+                return -ANKA_INFINITE;
             }
         }
         else {
@@ -373,11 +352,8 @@ namespace anka {
 
         int old_alpha = alpha;
 
-        if (params.check_timeup) {
-            if ((nodes_visited & 4095) == 0) {
-                if (IsTimeUp(params))
-                    params.uci_stop_flag = true;
-            }
+        if ((nodes_visited & 4095) == 0) {
+            CheckStopConditions(params);
         }
 
         if (pos.HalfMoveClock() >= 100 || pos.IsRepetition()) {
@@ -420,8 +396,8 @@ namespace anka {
 
         if (list.length == 0) {
             if (in_check) {
-                //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(-INFINITE, alpha, beta));
-                return -INFINITE;
+                //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(-ANKA_INFINITE, alpha, beta));
+                return -ANKA_INFINITE;
             }
             else {
                 //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(0, alpha, beta));
@@ -442,7 +418,7 @@ namespace anka {
             }
         }
 
-        int best_score = -INFINITE;
+        int best_score = -ANKA_INFINITE;
         Move best_move = 0;
         while (list.length > 0) {
             Move move = list.PopBest();
@@ -489,18 +465,31 @@ namespace anka {
     }
 
 
-    bool SearchInstance::IsTimeUp(SearchParams& params)
-    {        
-        auto curr_time = Timer::GetTimeInMs();
-        auto time_passed = curr_time - last_timecheck;
-        last_timecheck = curr_time;
+    void SearchInstance::CheckStopConditions(SearchParams& params)
+    {
+        char buffer[4096];
+        if (io::PolledRead(buffer, 4096) > 0) {
+            if (strncmp(buffer, "stop", 4) == 0) {
+                params.uci_stop_flag = true;
+                return;
+            }
+            else if (strncmp(buffer, "quit", 4) == 0) {
+                params.uci_stop_flag = true;
+                params.uci_quit_flag = true;
+                return;
+            }
+        }
 
-        params.movetime -= time_passed;
+        if (params.check_timeup) {
+            auto curr_time = Timer::GetTimeInMs();
+            auto time_passed = curr_time - last_timecheck;
+            last_timecheck = curr_time;
 
-        if (params.movetime < 0)
-            return true;
-        else
-            return false;
+            params.movetime -= time_passed;
+
+            if (params.movetime < 0)
+                params.uci_stop_flag = true;
+        }
     }
 
 

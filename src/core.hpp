@@ -17,6 +17,12 @@ typedef int16_t i16;
 #define C64(x) UINT64_C(x)
 #define C64_s(x) INT64_C(x)
 
+#if defined(_WIN32) || defined(_WIN64)
+#define PLATFORM_WINDOWS
+#elif defined(__unix__)
+#define PLATFORM_UNIX
+#endif
+
 #ifdef ANKA_DEBUG
 #define ANKA_ASSERT(x) \
 			do {if (!(x)) {std::cerr << "Assertion failed. File: "<<__FILE__<<" , Line: "<<__LINE__<<"\n"; abort();}} while (0)

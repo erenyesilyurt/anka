@@ -1,7 +1,9 @@
 #include "gamestate.hpp"
+#include "movegen.hpp"
 #include <sstream>
 #include <inttypes.h>
 #include <ctype.h>
+#include <string.h>
 #include <iostream>
 #include <assert.h>
 
@@ -197,7 +199,71 @@ bool anka::GameState::LoadPosition(std::string fen)
 }
 
 
-void anka::GameState::Print()
+// Create a move from the string and make sure it is a valid move in the position
+anka::Move anka::GameState::ParseMove(const char* line) const
+{
+	auto move_str_len = strlen(line);
+	if (move_str_len < 4 || move_str_len > 5)
+		return 0;
+
+	char move_str[6];
+	strcpy(move_str, line);
+
+
+	if (move_str[0] > 'h' || move_str[0] < 'a')
+		return 0;
+
+	if (move_str[1] > '8' || move_str[1] < '1')
+		return 0;
+
+	if (move_str[2] > 'h' || move_str[2] < 'a')
+		return 0;
+
+	if (move_str[3] > '8' || move_str[3] < '1')
+		return 0;
+
+	Square from = square::RankFileToSquare(move_str[1] - '1', move_str[0] - 'a');
+	Square to = square::RankFileToSquare(move_str[3] - '1', move_str[2] - 'a');
+
+	ANKA_ASSERT(from >= 0 && from < 64);
+	ANKA_ASSERT(to >= 0 && to < 64);
+
+	MoveList<256> list;
+	list.GenerateLegalMoves(*this);
+
+	// find the matching move from possible moves and return it
+	for (int i = 0; i < list.length; i++) {
+		Move move = list.moves[i].move;
+		if (move::FromSquare(move) == from && move::ToSquare(move) == to) {
+			if (move::IsPromotion(move)) {
+				if (move_str_len != 5)
+					return 0;
+
+				PieceType promoted = move::PromotedPiece(move);
+				if (promoted == piece_type::ROOK && move_str[4] == 'r') {
+					return move;
+				}
+				else if (promoted == piece_type::BISHOP && move_str[4] == 'b') {
+					return move;
+				}
+				else if (promoted == piece_type::QUEEN && move_str[4] == 'q') {
+					return move;
+				}
+				else if (promoted == piece_type::KNIGHT && move_str[4] == 'n') {
+					return move;
+				}
+				else {
+					return 0;
+				}
+			}
+			return move;
+		}
+	}
+
+	return 0;
+}
+
+void anka::GameState::Print() const
 {
 	putchar('\n');
 	char board[8][8];
@@ -258,7 +324,7 @@ void anka::GameState::Print()
 	printf("     a b c d e f g h \n\n");
 }
 
-void anka::GameState::PrintBitboards()
+void anka::GameState::PrintBitboards() const
 {
 	printf("***White pieces***\n");
 	bitboard::Print(Pieces<side::WHITE>());
