@@ -21,6 +21,7 @@ void anka::UciLoop()
 	trans_table.Init(options.hash_size);
 
 	SearchParams search_params;
+	search_params.eval_function = SimpleEvaluation;
 	GameState root_pos;
 	root_pos.LoadStartPosition();
 		

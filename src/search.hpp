@@ -3,7 +3,6 @@
 #include "gamestate.hpp"
 #include "movegen.hpp"
 #include "engine_settings.hpp"
-#include "evaluation.hpp"
 #include "timer.hpp"
 #include "ttable.hpp"
 

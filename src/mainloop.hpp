@@ -17,17 +17,6 @@ namespace anka {
 	extern TransposTable trans_table;
 
 	namespace uci {
-		//enum class CommandType {
-		//	invalid_cmd, debug, uci, isready, setoption, ucinewgame, position, go, stop, ponderhit, quit, registr,
-		//	anka_print, anka_perft, anka_eval
-		//};
-
-		//struct UciCommand {
-		//	CommandType type = CommandType::invalid_cmd;
-		//	char* value = nullptr;
-		//};
-
-
 		inline void OnUci()
 		{
 			printf("id name Anka\n");
@@ -221,7 +210,7 @@ namespace anka {
 
 		inline void OnEval(GameState& pos)
 		{
-			int eval_score = evaluate_basic(pos);
+			int eval_score = SimpleEvaluation(pos);
 			printf("Static eval: %+.2f (%+d cp)\n", eval_score / 100.0f, eval_score);
 		}
 	}

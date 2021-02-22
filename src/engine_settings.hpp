@@ -43,6 +43,8 @@ namespace anka {
 		bool uci_stop_flag = false;
 		bool uci_quit_flag = false;
 
+		int (*eval_function)(const GameState& pos) = nullptr;
+
 		void Clear()
 		{
 			infinite = true;

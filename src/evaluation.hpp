@@ -2,5 +2,5 @@
 #include "gamestate.hpp"
 
 namespace anka {
-	int evaluate_basic(const GameState& pos);
+	int SimpleEvaluation(const GameState& pos);
 }

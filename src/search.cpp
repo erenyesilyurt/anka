@@ -306,7 +306,7 @@ namespace anka {
         else {
             list.GenerateLegalCaptures(pos);
             // stand pat
-            int eval = evaluate_basic(pos);
+            int eval = params.eval_function(pos);
 
             if (eval >= beta) {
                 //io::IndentedPrint(pos.SearchDepth(), "QS %c result standpat betacutoff %d (%d >= %d)\n", side_char[pos.SideToPlay()], beta, eval, beta);
