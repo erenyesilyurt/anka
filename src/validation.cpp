@@ -40,37 +40,37 @@ namespace anka {
 				}
 				break;
 			case piece_type::PAWN:
-				if (!bitboard::BitIsSet(Pieces<side::LOWERBOUND, piece_type::PAWN>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::PAWN>(), sq)) {
 					std::cerr << "AnkaError (Validate): Pawns BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::KNIGHT:
-				if (!bitboard::BitIsSet(Pieces<side::LOWERBOUND, piece_type::KNIGHT>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::KNIGHT>(), sq)) {
 					std::cerr << "AnkaError (Validate): Knights BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::BISHOP:
-				if (!bitboard::BitIsSet(Pieces<side::LOWERBOUND, piece_type::BISHOP>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::BISHOP>(), sq)) {
 					std::cerr << "AnkaError (Validate): Bishops BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::ROOK:
-				if (!bitboard::BitIsSet(Pieces<side::LOWERBOUND, piece_type::ROOK>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::ROOK>(), sq)) {
 					std::cerr << "AnkaError (Validate): Rooks BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::QUEEN:
-				if (!bitboard::BitIsSet(Pieces<side::LOWERBOUND, piece_type::QUEEN>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::QUEEN>(), sq)) {
 					std::cerr << "AnkaError (Validate): Queens BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::KING:
-				if (!bitboard::BitIsSet(Pieces<side::LOWERBOUND, piece_type::KING>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::KING>(), sq)) {
 					std::cerr << "AnkaError (Validate): Kings BB/mailbox mismatch at square " << sq << "\n";
 					valid = false;
 				}

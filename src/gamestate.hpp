@@ -34,26 +34,26 @@ namespace anka {
 
 		force_inline Bitboard Occupancy() const { return m_occupation; }
 
-		template <int side, int piece_type = piece_type::LOWERBOUND>
+		template <int side, int piece_type = piece_type::ALL>
 		force_inline Bitboard Pieces() const
 		{
-			static_assert(side >= side::WHITE && side <= side::LOWERBOUND);
-			static_assert(piece_type >= piece_type::PAWN && piece_type <= piece_type::LOWERBOUND);
+			static_assert(side >= side::WHITE && side <= side::ALL);
+			static_assert(piece_type >= piece_type::PAWN && piece_type <= piece_type::ALL);
 
 			if constexpr (side == side::WHITE) {
-				if constexpr (piece_type == piece_type::LOWERBOUND)
+				if constexpr (piece_type == piece_type::ALL)
 					return m_piecesBB[side::WHITE];
 				else
 					return m_piecesBB[piece_type] & m_piecesBB[side::WHITE];
 			}
 			else if (side == side::BLACK) {
-				if constexpr (piece_type == piece_type::LOWERBOUND)
+				if constexpr (piece_type == piece_type::ALL)
 					return m_piecesBB[side::BLACK];
 				else
 					return m_piecesBB[piece_type] & m_piecesBB[side::BLACK];
 			}
 			else { // side::ALL
-				if constexpr (piece_type == piece_type::LOWERBOUND)
+				if constexpr (piece_type == piece_type::ALL)
 					return m_piecesBB[side::WHITE] & m_piecesBB[side::BLACK];
 				else
 					return m_piecesBB[piece_type];

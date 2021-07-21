@@ -22,7 +22,7 @@ void anka::GameState::Clear()
 	m_ep_target = square::NOSQUARE;
 	m_castling_rights = 0;
 	m_halfmove_clock = 0;
-	m_side = side::LOWERBOUND;
+	m_side = side::NONE;
 	m_zobrist_key = C64(0);
 	m_depth = 0;
 	m_total_material = 0;
@@ -274,7 +274,7 @@ void anka::GameState::Print() const
 	}
 	constexpr char piece_chars[] = { 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-	Bitboard white_pieces = Pieces<side::WHITE, piece_type::LOWERBOUND>();
+	Bitboard white_pieces = Pieces<side::WHITE, piece_type::ALL>();
 	for (int i = 2; i < 8; i++) {
 		Bitboard pieces = m_piecesBB[i];
 		char piece_char = piece_chars[i - 2];
@@ -335,26 +335,26 @@ void anka::GameState::PrintBitboards() const
 	putchar('\n');
 
 	printf("***Pawns***\n");
-	bitboard::Print(Pieces<side::LOWERBOUND, piece_type::PAWN>());
+	bitboard::Print(Pieces<side::ALL, piece_type::PAWN>());
 	putchar('\n');
 
 	printf("***Knights***\n");
-	bitboard::Print(Pieces<side::LOWERBOUND, piece_type::KNIGHT>());
+	bitboard::Print(Pieces<side::ALL, piece_type::KNIGHT>());
 	putchar('\n');
 
 	printf("***Bishops***\n");
-	bitboard::Print(Pieces<side::LOWERBOUND, piece_type::BISHOP>());
+	bitboard::Print(Pieces<side::ALL, piece_type::BISHOP>());
 	putchar('\n');
 
 	printf("***Rooks***\n");
-	bitboard::Print(Pieces<side::LOWERBOUND, piece_type::ROOK>());
+	bitboard::Print(Pieces<side::ALL, piece_type::ROOK>());
 	putchar('\n');
 
 	printf("***Queens***\n");
-	bitboard::Print(Pieces<side::LOWERBOUND, piece_type::QUEEN>());
+	bitboard::Print(Pieces<side::ALL, piece_type::QUEEN>());
 	putchar('\n');
 
 	printf("***Kings***\n");
-	bitboard::Print(Pieces<side::LOWERBOUND, piece_type::KING>());
+	bitboard::Print(Pieces<side::ALL, piece_type::KING>());
 	putchar('\n');
 }

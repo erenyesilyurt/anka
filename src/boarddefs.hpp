@@ -114,7 +114,7 @@ namespace anka {
 	};
 
 	namespace piece_type {
-		enum { NOPIECE = 0, PAWN = 2, KNIGHT, BISHOP, ROOK, QUEEN, KING, LOWERBOUND };
+		enum { NOPIECE = 0, PAWN = 2, KNIGHT, BISHOP, ROOK, QUEEN, KING, ALL };
 
 		force_inline bool IsSlider(PieceType p)
 		{
@@ -124,7 +124,7 @@ namespace anka {
 
 	namespace side {
 
-		enum { WHITE = 0, BLACK = 1, LOWERBOUND = 2 };
+		enum { WHITE = 0, BLACK = 1, ALL = 2, NONE = 2 };
 
 		force_inline const char* ToString(Side s)
 		{
