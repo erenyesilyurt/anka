@@ -82,7 +82,7 @@ namespace anka {
 
     // an implementation of the simple evaluation function proposed by Tomasz Michniewski
 	// Evaluates the position from white's perspective then negates the score if side to play is black
-    int SimpleEvaluation(const GameState& pos)
+    int ClassicEvaluation(const GameState& pos)
     {
 		Side side = pos.SideToPlay();
 		int flip_mask = 56 & (side - 1); // if black: 0 , if white: 56

@@ -19,10 +19,10 @@ namespace anka {
 	};
 
 	// Lockless shared transposition table
-	class TransposTable {
+	class TranspositionTable {
 	public:
-		TransposTable() : m_table {nullptr}, m_table_length(0), m_table_size(0), m_table_hits(0) {}
-		~TransposTable()
+		TranspositionTable() : m_table {nullptr}, m_num_buckets(0), m_table_size(0), m_table_hits(0), m_current_age(0) {}
+		~TranspositionTable()
 		{
 			free(m_table);
 		}
@@ -39,23 +39,19 @@ namespace anka {
 				return false;
 			
 			auto table_size_old = m_table_size;
-			auto table_length_old = m_table_length;
+			auto num_buckets_old = m_num_buckets;
 
-			m_table_length = (hash_size * MB ) / sizeof(TTRecord);
-			m_table_size = m_table_length * sizeof(TTRecord);
+			m_num_buckets = (hash_size * MB ) / sizeof(TTBucket);
+			m_table_size = m_num_buckets * sizeof(TTBucket);
 
 
-			TTRecord* table = m_table;
-			// allocate / reallocate
-			if (table == nullptr)
-				table = (TTRecord*)realloc(NULL, m_table_size);
-			else {		
-				table = (TTRecord*)realloc(m_table, m_table_size);
-			}
+			TTBucket* table = m_table;
+			// allocate
+			table = (TTBucket*)realloc(m_table, m_table_size);
 
 			if (table == nullptr) {
 				m_table_size = table_size_old;
-				m_table_length = table_length_old;
+				m_num_buckets = num_buckets_old;
 				return false;
 			}
 			else {
@@ -69,46 +65,63 @@ namespace anka {
 		{
 			ANKA_ASSERT(pos_key != C64(0));
 
-			size_t index = pos_key % m_table_length;
-			u64 data = m_table[index].data;
+			size_t bucket_index = pos_key % m_num_buckets;
+			
+			auto bucket = m_table[bucket_index];
 
-			if ((m_table[index].key ^ data) != pos_key)
-				return false;
-	
-			// extract node info from data
-			result.move = data & 0xffffffff;
-			result.score = (data & 0xffff00000000) >> 32;
-			result.depth = (data & 0xff000000000000) >> 48;
-			result.type = static_cast<NodeType>((data & 0x300000000000000) >> 56);
+			for (int i = 0; i < 4; i++) {
+				if ((bucket.records[i].key ^ bucket.records[i].data) == pos_key) {
+					result.move = (bucket.records[i].data & 0xffffffff);
+					result.score = (bucket.records[i].data >> 32) & 0xffff;
+					result.depth = (bucket.records[i].data >> 48) & 0xff;
+					result.type = static_cast<NodeType>((bucket.records[i].data >> 56) & 0x3);
 
-			ANKA_ASSERT(result.score <= EngineSettings::MAX_SCORE && result.score >= EngineSettings::MIN_SCORE);
-			ANKA_ASSERT(result.move != 0);
-			ANKA_ASSERT(result.depth <= EngineSettings::MAX_DEPTH && result.depth > 0);
+					ANKA_ASSERT(result.score <= EngineSettings::MAX_SCORE && result.score >= EngineSettings::MIN_SCORE);
+					ANKA_ASSERT(result.move != 0);
+					ANKA_ASSERT(result.depth <= EngineSettings::MAX_DEPTH && result.depth > 0);
 
+					return true;
+				}
+			}
 
-			return true;
+			return false;
 		}
 
-		inline void Set(u64 pos_key, NodeType type, int depth, Move best_move, i16 score)
+		inline void Put(u64 pos_key, NodeType type, int depth, Move best_move, i16 score)
 		{
 			ANKA_ASSERT(score <= EngineSettings::MAX_SCORE && score >= EngineSettings::MIN_SCORE);
 			ANKA_ASSERT(pos_key != C64(0));
 			ANKA_ASSERT(best_move != 0);
 			ANKA_ASSERT(depth <= EngineSettings::MAX_DEPTH && depth >= 1);
 
-			size_t index = pos_key % m_table_length;
+			size_t bucket_index = pos_key % m_num_buckets;
 			u64 score_bits = score & 0xffff;
 			u64 depth_bits = depth & 0xff;
 			u64 node_bits = (int)type & 0x3;
+			u64 age_bits = m_current_age & 0x1f;
 
 			u64 data = best_move;
 			data |= (score_bits << 32);
 			data |= (depth_bits << 48);
 			data |= (node_bits << 56);
+			data |= (age_bits << 58);
 			u64 key = pos_key ^ data;
 
-			m_table[index].key = key;
-			m_table[index].data = data;
+			int chosen_record_index = 0;
+			int min_depth = EngineSettings::MAX_DEPTH;
+			for (int i = 0; i < 4; i++) {
+				if (age_bits != ((m_table[bucket_index].records[i].data >> 58) & 0x1f)) {
+					chosen_record_index = i;
+					break;
+				}
+				int record_depth = (m_table[bucket_index].records[i].data >> 48) & 0xff;
+				if (record_depth < min_depth) {
+					min_depth = record_depth;
+					chosen_record_index = i;
+				}
+			}
+
+			m_table[bucket_index].records[chosen_record_index] = { key, data };
 		}
 
 		// extracts the principal variation moves into pv. returns the number of extracted moves.
@@ -147,6 +160,12 @@ namespace anka {
 			return moves_made;
 		}
 
+		inline void IncrementAge()
+		{
+			m_current_age++;
+		}
+
+	// TODO: 4 cells per bucket
 	private:
 		/**
 		 * TTRecord Encoding
@@ -157,19 +176,28 @@ namespace anka {
 		 *  [32:47] : score // 16 bits
 		 *  [48:55] : depth // 8 bits
 		 *  [56:57] : node type // 2 bits
+		 *  [58:62] : age // 5 bits
 		*/
+
+		// Each record is 16 bytes
 		struct TTRecord {
 			u64 key; // key is position key ^ data
 			u64 data;
 		};
 
+		// Each bucket is 64 bytes
+		struct TTBucket {
+			TTRecord records[4];
+		};
+
 		static constexpr size_t MB = 1000000;
-		size_t m_table_length; // number of TTRecords
+		size_t m_num_buckets; // number of TTBuckets
 		size_t m_table_size; // total table size in bytes
-		u64 m_table_hits = 0;
-		TTRecord* m_table;
+		u64 m_table_hits;
+		TTBucket* m_table;
+		unsigned int m_current_age;
 	};
 
-	extern TransposTable trans_table;
+	extern TranspositionTable trans_table;
 
 }

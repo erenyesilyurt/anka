@@ -14,8 +14,14 @@
 //	anka::attacks::InitAttacks();
 //
 //
-//	TransposTable ttable;
+//	TranspositionTable ttable;
 //	if (!ttable.Init(32)) {
+//		fprintf(stderr, "Failed to init table.\n");
+//		return 1;
+//	}
+//
+//	// Test reallocation
+//	if (!ttable.Init(16)) {
 //		fprintf(stderr, "Failed to init table.\n");
 //		return 1;
 //	}
@@ -32,7 +38,7 @@
 //		int score = rng.rand64(-EngineSettings::MAX_SCORE, EngineSettings::MAX_SCORE);
 //		Move best_move = rng.rand32();
 //
-//		ttable.Set(pos_key, type, depth, best_move, score);
+//		ttable.Put(pos_key, type, depth, best_move, score);
 //		TTResult result;
 //		ttable.Get(pos_key, result);
 //

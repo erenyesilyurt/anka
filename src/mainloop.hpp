@@ -13,9 +13,6 @@
 
 
 namespace anka {
-
-	extern TransposTable trans_table;
-
 	namespace uci {
 		inline void OnUci()
 		{
@@ -210,7 +207,7 @@ namespace anka {
 
 		inline void OnEval(GameState& pos)
 		{
-			int eval_score = SimpleEvaluation(pos);
+			int eval_score = ClassicEvaluation(pos);
 			printf("Static eval: %+.2f (%+d cp)\n", eval_score / 100.0f, eval_score);
 		}
 	}

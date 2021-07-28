@@ -9,7 +9,7 @@
 	
 static constexpr size_t MAX_COMMAND_LENGTH = 4096;
 namespace anka {
-	TransposTable trans_table;
+	TranspositionTable trans_table;
 }
 
 void anka::UciLoop()
@@ -21,7 +21,6 @@ void anka::UciLoop()
 	trans_table.Init(options.hash_size);
 
 	SearchParams search_params;
-	search_params.eval_function = SimpleEvaluation;
 	GameState root_pos;
 	root_pos.LoadStartPosition();
 		

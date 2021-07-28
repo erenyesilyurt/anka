@@ -1,6 +1,7 @@
 #include "search.hpp"
 #include "io.hpp"
 #include "util.hpp"
+#include "evaluation.hpp"
 
 
 namespace anka {
@@ -55,7 +56,6 @@ namespace anka {
         }
 
         if (pos.HalfMoveClock() >= 100 || pos.IsRepetition()) {
-            //io::IndentedPrint(pos.SearchDepth(), "AB result terminal %d\n", Clamp(0, alpha, beta));
             return 0;
         }
 
@@ -129,7 +129,7 @@ namespace anka {
 
         if (best_score > alpha) {
             if (best_score >= beta) {
-                trans_table.Set(pos_key, NodeType::LOWERBOUND, depth, best_move, best_score);
+                trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, best_move, best_score);
                 if (!in_check && move::IsQuiet(best_move))
                     SetKillerMove(best_move, depth);
                 return best_score;
@@ -159,7 +159,7 @@ namespace anka {
             pos.UndoMove();
             if (score > best_score) {
                 if (score >= beta) {
-                    trans_table.Set(pos_key, NodeType::LOWERBOUND, depth, move, score);
+                    trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score);
                     if (!in_check && move::IsQuiet(move))
                         SetKillerMove(move, depth);
                     return score;
@@ -174,10 +174,10 @@ namespace anka {
         
         if (best_score > old_alpha) {
             ANKA_ASSERT(best_score < beta);
-            trans_table.Set(pos_key, NodeType::PV, depth, best_move, best_score);
+            trans_table.Put(pos_key, NodeType::PV, depth, best_move, best_score);
         }
         else {
-            trans_table.Set(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score);
+            trans_table.Put(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score);
         }
 
         return best_score;
@@ -191,6 +191,7 @@ namespace anka {
         bool skip_search = false;
         char best_move_str[6];
 
+        trans_table.IncrementAge();
         // check if there is only one legal move in position
         {
             MoveList<256> move_list;
@@ -306,7 +307,7 @@ namespace anka {
         else {
             list.GenerateLegalCaptures(pos);
             // stand pat
-            int eval = params.eval_function(pos);
+            int eval = ClassicEvaluation(pos);
 
             if (eval >= beta) {
                 //io::IndentedPrint(pos.SearchDepth(), "QS %c result standpat betacutoff %d (%d >= %d)\n", side_char[pos.SideToPlay()], beta, eval, beta);
@@ -422,9 +423,6 @@ namespace anka {
         Move best_move = 0;
         while (list.length > 0) {
             Move move = list.PopBest();
-            //char move_str[6];
-            //move::ToString(move, move_str);
-            ////io::IndentedPrint(pos.SearchDepth(), "AB %c move %s alpha %d beta %d best_score %d\n", side_char[pos.SideToPlay()], move_str, alpha, beta, best_score);
             nodes_visited++;
             pos.MakeMove(move);
             int score = -AlphaBeta(pos, -beta, -alpha, depth - 1, params);
@@ -432,7 +430,7 @@ namespace anka {
 
             if (score > best_score) {
                 if (score >= beta) {
-                    trans_table.Set(pos_key, NodeType::LOWERBOUND, depth, move, score);
+                    trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score);
                     if (!in_check && move::IsQuiet(move))
                         SetKillerMove(move, depth);
                     return score;
@@ -452,14 +450,13 @@ namespace anka {
 
         if (best_score > old_alpha) {
             ANKA_ASSERT(best_score < beta);
-            trans_table.Set(pos_key, NodeType::PV, depth, best_move, best_score);
+            trans_table.Put(pos_key, NodeType::PV, depth, best_move, best_score);
         }
         else {
-            trans_table.Set(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score);
+            trans_table.Put(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score);
         }
 
 
-        ////io::IndentedPrint(pos.SearchDepth(), "AB %c result best_score %d\n", side_char[pos.SideToPlay()], best_score);
         return best_score;
 
     }
