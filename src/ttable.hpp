@@ -8,7 +8,7 @@
 
 namespace anka {
 
-	enum class NodeType { PV, UPPERBOUND, LOWERBOUND };
+	enum class NodeType { EXACT, UPPERBOUND, LOWERBOUND };
 
 	// the result of a successful transposition table probe
 	struct TTResult {
@@ -135,7 +135,7 @@ namespace anka {
 				u64 pos_key = pos.PositionKey();
 				list.GenerateLegalMoves(pos);
 
-				if (Get(pos_key, node) && node.type == NodeType::PV) {
+				if (Get(pos_key, node) && node.type == NodeType::EXACT) {
 					// check move for legality
 					if (node.move == 0 || moves_made == max_pv_length)
 						break;
@@ -165,7 +165,7 @@ namespace anka {
 			m_current_age++;
 		}
 
-	// TODO: 4 cells per bucket
+
 	private:
 		/**
 		 * TTRecord Encoding

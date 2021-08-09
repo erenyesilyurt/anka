@@ -8,7 +8,7 @@
 #include "move.hpp"
 
 namespace anka {
-	constexpr int kGameHistoryMaxSize = 1024;
+	constexpr int kStateHistoryMaxSize = 1024;
 
 	struct PositionRecord {
 		u64 zobrist_key;
@@ -22,14 +22,14 @@ namespace anka {
 	public:
 		GameState() : m_piecesBB{}, m_occupation{}, m_board{}, m_ep_target{ square::NOSQUARE },
 			m_side{ side::WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
-			m_zobrist_key{}, m_depth{}, m_game_history{}, m_total_material{0}
+			m_zobrist_key{}, m_depth{}, m_state_history{}, m_total_material{0}
 		{
-			m_game_history = new PositionRecord[kGameHistoryMaxSize];
+			m_state_history = new PositionRecord[kStateHistoryMaxSize];
 		}
 
 		~GameState()
 		{
-			delete[] m_game_history;
+			delete[] m_state_history;
 		}
 
 		force_inline Bitboard Occupancy() const { return m_occupation; }
@@ -127,7 +127,10 @@ namespace anka {
 			return false;
 		}
 
-		// TODO: test this
+		/* TODO
+		* rewrite this
+		* http://www.talkchess.com/forum3/viewtopic.php?t=51000
+		*/
 		force_inline bool IsRepetition() const
 		{
 			int history_index = m_depth - 1;
@@ -135,7 +138,7 @@ namespace anka {
 			while (history_index >= 0) {
 				if (i == m_halfmove_clock)
 					break;
-				if (m_zobrist_key == m_game_history[history_index].zobrist_key)
+				if (m_zobrist_key == m_state_history[history_index].zobrist_key)
 					return true;
 				i++;
 				history_index--;
@@ -213,6 +216,6 @@ namespace anka {
 		u64 m_zobrist_key;
 		int m_depth;
 		int m_total_material;
-		PositionRecord *m_game_history;
+		PositionRecord *m_state_history;
 	};
 } // namespace anka

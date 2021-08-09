@@ -54,7 +54,6 @@ namespace anka {
         long long last_timecheck = 0;
 	public:
         int Quiescence(GameState& pos, int alpha, int beta, SearchParams& params);
-        int AlphaBeta(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
         int PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
     private:
         void CheckStopConditions(SearchParams& params);

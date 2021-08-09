@@ -23,11 +23,11 @@ namespace anka {
 		int flip_mask = 56 & (~(m_side - 1)); // if black: 56 , if white: 0
 		int push_dir = 8 - (m_side << 4); // if black: south, if white: north
 
-		m_game_history[m_depth].castle_rights = m_castling_rights;
-		m_game_history[m_depth].ep_target = m_ep_target;
-		m_game_history[m_depth].half_move_clock = m_halfmove_clock;
-		m_game_history[m_depth].zobrist_key = m_zobrist_key;
-		m_game_history[m_depth].move_made = move;
+		m_state_history[m_depth].castle_rights = m_castling_rights;
+		m_state_history[m_depth].ep_target = m_ep_target;
+		m_state_history[m_depth].half_move_clock = m_halfmove_clock;
+		m_state_history[m_depth].zobrist_key = m_zobrist_key;
+		m_state_history[m_depth].move_made = move;
 
 		// remove hashes from key
 		UpdateKeyWithEnPassant();
@@ -148,9 +148,9 @@ namespace anka {
 
 		m_depth = m_depth - 1;
 
-		m_halfmove_clock = m_game_history[m_depth].half_move_clock;
-		m_castling_rights = m_game_history[m_depth].castle_rights;
-		m_ep_target = m_game_history[m_depth].ep_target;
+		m_halfmove_clock = m_state_history[m_depth].half_move_clock;
+		m_castling_rights = m_state_history[m_depth].castle_rights;
+		m_ep_target = m_state_history[m_depth].ep_target;
 		m_side = m_side ^ 1;
 
 		// add hashes back
@@ -162,7 +162,7 @@ namespace anka {
 		int push_dir = 8 - (m_side << 4); // if black: south, if white: north
 		Side opposite_side = static_cast<Side>(m_side ^ 1);
 
-		Move move = m_game_history[m_depth].move_made;
+		Move move = m_state_history[m_depth].move_made;
 
 		Square from = move::FromSquare(move);
 		Square to = move::ToSquare(move);

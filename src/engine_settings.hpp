@@ -13,7 +13,7 @@ namespace anka {
 		static constexpr int MAX_NUM_THREADS = 128;
 		static constexpr int MAX_SCORE = 32767;
 		static constexpr int MIN_SCORE = -32767;
-		static constexpr int MAX_DEPTH = 255;
+		static constexpr int MAX_DEPTH = 128;
 		static constexpr int PV_BUFFER_LENGTH = 64;
 		static constexpr int MOVE_OVERHEAD = 10;
 

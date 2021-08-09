@@ -118,15 +118,12 @@ namespace anka {
 
 			const char* pch = strstr(line, "infinite");
 			if (pch) {
-				IterativeDeepening(root_pos, params);
-				return;
-			}
-			else {
-				params.infinite = false;
+				return IterativeDeepening(root_pos, params);
 			}
 
 			pch = strstr(line, "depth ");
 			if (pch) {
+				params.infinite = false;
 				pch += 6;
 				int val = atoi(pch);
 				if (val > 0)
@@ -135,6 +132,7 @@ namespace anka {
 
 			pch = strstr(line, "movetime ");
 			if (pch) {
+				params.infinite = false;
 				pch += 9;
 				int val = atoi(pch);
 				if (val > 0)
@@ -145,6 +143,7 @@ namespace anka {
 
 			pch = strstr(line, "movestogo ");
 			if (pch) {
+				params.infinite = false;
 				pch += 10;
 				int val = atoi(pch);
 				if (val > 0)
@@ -153,10 +152,20 @@ namespace anka {
 
 			pch = strstr(line, "wtime ");
 			if (pch) {
+				params.infinite = false;
 				pch += 6;
 				int val = atoi(pch);
 				if (val > 0)
 					params.wtime = val;
+			}
+
+			pch = strstr(line, "btime ");
+			if (pch) {
+				params.infinite = false;
+				pch += 6;
+				int val = atoi(pch);
+				if (val > 0)
+					params.btime = val;
 			}
 
 			pch = strstr(line, "winc ");
@@ -165,14 +174,6 @@ namespace anka {
 				int val = atoi(pch);
 				if (val > 0)
 					params.winc = val;
-			}
-
-			pch = strstr(line, "btime ");
-			if (pch) {
-				pch += 6;
-				int val = atoi(pch);
-				if (val > 0)
-					params.btime = val;
 			}
 
 			pch = strstr(line, "binc ");
