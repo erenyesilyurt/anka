@@ -15,13 +15,13 @@
 //
 //
 //	TranspositionTable ttable;
-//	if (!ttable.Init(32)) {
+//	if (!ttable.Init(35)) {
 //		fprintf(stderr, "Failed to init table.\n");
 //		return 1;
 //	}
 //
 //	// Test reallocation
-//	if (!ttable.Init(16)) {
+//	if (!ttable.Init(27)) {
 //		fprintf(stderr, "Failed to init table.\n");
 //		return 1;
 //	}
@@ -35,10 +35,14 @@
 //		u64 pos_key = rng.rand64();
 //		NodeType type = static_cast<NodeType>(rng.rand64() % 3);
 //		int depth = rng.rand64(1, EngineSettings::MAX_DEPTH);
-//		int score = rng.rand64(-EngineSettings::MAX_SCORE, EngineSettings::MAX_SCORE);
+//		int value = rng.rand(-EngineSettings::MAX_SCORE, EngineSettings::MAX_SCORE);
 //		Move best_move = rng.rand32();
 //
-//		ttable.Put(pos_key, type, depth, best_move, score);
+//		int iteration_age = (i + 1) & 0x3f;
+//		ttable.IncrementAge();
+//		assert(ttable.GetAge() == iteration_age);
+//
+//		ttable.Put(pos_key, type, depth, best_move, value);
 //		TTResult result;
 //		ttable.Get(pos_key, result);
 //
@@ -52,9 +56,9 @@
 //			fprintf(stderr, "Depth mismatch (stored: %d got: %d)\n", depth, result.depth);
 //		}
 //
-//		if (result.score != score) {
+//		if (result.value != value) {
 //			fail = true;
-//			fprintf(stderr, "Score mismatch (stored: %d got: %d)\n", score, result.score);
+//			fprintf(stderr, "Value mismatch (stored: %d got: %d)\n", value, result.value);
 //		}
 //
 //		if (result.move != best_move) {
@@ -63,6 +67,7 @@
 //		}
 //	}
 //
-//	printf("Transposition table test passed.\n");
+//	if (!fail)
+//		printf("Transposition table test passed.\n");
 //	return 0;
 //}

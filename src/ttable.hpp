@@ -14,11 +14,10 @@ namespace anka {
 	struct TTResult {
 		Move move;
 		int depth;
-		i16 score;
+		i16 value;
 		NodeType type;
 	};
 
-	// Lockless shared transposition table
 	class TranspositionTable {
 	public:
 		TranspositionTable() : m_table {nullptr}, m_num_buckets(0), m_table_size(0), m_table_hits(0), m_current_age(0) {}
@@ -30,20 +29,24 @@ namespace anka {
 		inline void Clear()
 		{
 			memset(m_table, 0, m_table_size);
+			m_current_age = 0;
 			m_table_hits = 0;
 		}
 
 		inline bool Init(size_t hash_size)
 		{
-			if (hash_size < 1)
+			if (hash_size < EngineSettings::MIN_HASH_SIZE || hash_size > EngineSettings::MAX_HASH_SIZE)
 				return false;
-			
+
 			auto table_size_old = m_table_size;
 			auto num_buckets_old = m_num_buckets;
 
-			m_num_buckets = (hash_size * MB ) / sizeof(TTBucket);
-			m_table_size = m_num_buckets * sizeof(TTBucket);
-
+			m_table_size = 1 * MiB;
+			// round down hash size to nearest power of two
+			while (hash_size >>= 1) {
+				m_table_size <<= 1;
+			}
+			m_num_buckets = m_table_size / sizeof(TTBucket);
 
 			TTBucket* table = m_table;
 			// allocate
@@ -61,22 +64,21 @@ namespace anka {
 			}
 		}
 
-		inline bool Get(const u64 pos_key, TTResult &result)
+		inline bool Get(u64 pos_hash, TTResult &result)
 		{
-			ANKA_ASSERT(pos_key != C64(0));
+			ANKA_ASSERT(pos_hash != C64(0));
+			size_t bucket_index = pos_hash & (m_num_buckets-1);
+			u32 pos_key = static_cast<u32>(pos_hash >> 32);
 
-			size_t bucket_index = pos_key % m_num_buckets;
-			
 			auto bucket = m_table[bucket_index];
+			for (int i = 0; i < num_cells; i++) {
+				if (bucket.records[i].key == pos_key) {
+					result.move = bucket.records[i].move;
+					result.value = bucket.records[i].value;
+					result.depth = bucket.records[i].depth;
+					result.type = static_cast<NodeType>((bucket.records[i].node_type_and_age >> 6));
 
-			for (int i = 0; i < 4; i++) {
-				if ((bucket.records[i].key ^ bucket.records[i].data) == pos_key) {
-					result.move = (bucket.records[i].data & 0xffffffff);
-					result.score = (bucket.records[i].data >> 32) & 0xffff;
-					result.depth = (bucket.records[i].data >> 48) & 0xff;
-					result.type = static_cast<NodeType>((bucket.records[i].data >> 56) & 0x3);
-
-					ANKA_ASSERT(result.score <= EngineSettings::MAX_SCORE && result.score >= EngineSettings::MIN_SCORE);
+					ANKA_ASSERT(result.value <= EngineSettings::MAX_SCORE && result.value >= EngineSettings::MIN_SCORE);
 					ANKA_ASSERT(result.move != 0);
 					ANKA_ASSERT(result.depth <= EngineSettings::MAX_DEPTH && result.depth > 0);
 
@@ -87,41 +89,38 @@ namespace anka {
 			return false;
 		}
 
-		inline void Put(u64 pos_key, NodeType type, int depth, Move best_move, i16 score)
+		inline void Put(u64 pos_hash, NodeType type, int depth, Move best_move, i16 value)
 		{
-			ANKA_ASSERT(score <= EngineSettings::MAX_SCORE && score >= EngineSettings::MIN_SCORE);
-			ANKA_ASSERT(pos_key != C64(0));
+			ANKA_ASSERT(value <= EngineSettings::MAX_SCORE && value >= EngineSettings::MIN_SCORE);
+			ANKA_ASSERT(pos_hash != C64(0));
 			ANKA_ASSERT(best_move != 0);
 			ANKA_ASSERT(depth <= EngineSettings::MAX_DEPTH && depth >= 1);
 
-			size_t bucket_index = pos_key % m_num_buckets;
-			u64 score_bits = score & 0xffff;
-			u64 depth_bits = depth & 0xff;
-			u64 node_bits = (int)type & 0x3;
-			u64 age_bits = m_current_age & 0x1f;
+			size_t bucket_index = pos_hash & (m_num_buckets - 1);
+			u32 pos_key = static_cast<u32>(pos_hash >> 32);
 
-			u64 data = best_move;
-			data |= (score_bits << 32);
-			data |= (depth_bits << 48);
-			data |= (node_bits << 56);
-			data |= (age_bits << 58);
-			u64 key = pos_key ^ data;
-
-			int chosen_record_index = 0;
+			int chosen_index = 0;
 			int min_depth = EngineSettings::MAX_DEPTH;
-			for (int i = 0; i < 4; i++) {
-				if (age_bits != ((m_table[bucket_index].records[i].data >> 58) & 0x1f)) {
-					chosen_record_index = i;
+			for (int i = 0; i < num_cells; i++) {
+				int record_age = m_table[bucket_index].records[i].node_type_and_age & 0x3f;
+				if (record_age != m_current_age) {
+					chosen_index = i;
 					break;
 				}
-				int record_depth = (m_table[bucket_index].records[i].data >> 48) & 0xff;
-				if (record_depth < min_depth) {
-					min_depth = record_depth;
-					chosen_record_index = i;
+
+				if (m_table[bucket_index].records[i].depth < min_depth) {
+					min_depth = m_table[bucket_index].records[i].depth;
+					chosen_index = i;
 				}
 			}
 
-			m_table[bucket_index].records[chosen_record_index] = { key, data };
+			int type_and_age = static_cast<int>(type);
+			type_and_age = (type_and_age << 6) | m_current_age;
+			m_table[bucket_index].records[chosen_index].key = pos_key;
+			m_table[bucket_index].records[chosen_index].value = value;
+			m_table[bucket_index].records[chosen_index].depth = depth;
+			m_table[bucket_index].records[chosen_index].move = best_move;
+			m_table[bucket_index].records[chosen_index].node_type_and_age = type_and_age;
 		}
 
 		// extracts the principal variation moves into pv. returns the number of extracted moves.
@@ -162,40 +161,52 @@ namespace anka {
 
 		inline void IncrementAge()
 		{
-			m_current_age++;
+			m_current_age = ++m_current_age & 0x3f;
 		}
 
+		inline int GetAge() const {
+			return m_current_age;
+		}
 
 	private:
+		static constexpr int num_cells = 5;
+		static constexpr size_t MiB = 1'048'576;
+
 		/**
 		 * TTRecord Encoding
 		 * key:
-		 *	positionkey ^ data
+		 *	LSB32 of positionkey // 32 bits
 		 * data:
 		 *	[0:31]  : best move // 32 bits
-		 *  [32:47] : score // 16 bits
+		 *  [32:47] : value // 16 bits
 		 *  [48:55] : depth // 8 bits
-		 *  [56:57] : node type // 2 bits
-		 *  [58:62] : age // 5 bits
+		 *  [56:63] : node type and age // 2 bits and 6 bits
 		*/
 
-		// Each record is 16 bytes
+		// Each record is 12 bytes
 		struct TTRecord {
-			u64 key; // key is position key ^ data
-			u64 data;
+			u32 key;
+			u32 move;
+			i16 value;
+			byte depth;
+			byte node_type_and_age;
 		};
+		static_assert(sizeof(TTRecord) == 12, "TTRecord: unexpected struct alignment");
 
 		// Each bucket is 64 bytes
 		struct TTBucket {
-			TTRecord records[4];
+			TTRecord records[num_cells];
+			u32 padding;
 		};
+		static_assert(sizeof(TTBucket) == 64, "TTBucket: unexpected size");
 
-		static constexpr size_t MB = 1000000;
+
 		size_t m_num_buckets; // number of TTBuckets
 		size_t m_table_size; // total table size in bytes
 		u64 m_table_hits;
 		TTBucket* m_table;
 		unsigned int m_current_age;
+		
 	};
 
 	extern TranspositionTable trans_table;

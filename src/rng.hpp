@@ -18,11 +18,15 @@ namespace anka {
             return distribution(*this);
         }
 
+        force_inline double rand(double min, double max)
+        {
+            std::uniform_real_distribution<double> distribution(min, max);
+            return distribution(*this);
+        }
+
         force_inline int32_t rand32() { return static_cast<int32_t>(next() >> 32); }
         force_inline u64 rand64() { return next(); }
         force_inline u64 rand64_sparse() { return (next() & next() & next()); }
-
-        // possibly bugged
         force_inline u64 rand64(u64 min, u64 max)
         {
             if (min >= max)

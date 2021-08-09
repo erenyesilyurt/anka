@@ -243,14 +243,14 @@ namespace anka {
             if (probe_result.depth >= depth) {
                 switch (probe_result.type) {
                 case anka::NodeType::EXACT: {
-                    return probe_result.score;
+                    return probe_result.value;
                 }
                 case anka::NodeType::UPPERBOUND: {
-                    beta = Min(beta, probe_result.score);
+                    beta = Min(beta, probe_result.value);
                     break;
                 }
                 case anka::NodeType::LOWERBOUND: {
-                    alpha = Max(alpha, probe_result.score);
+                    alpha = Max(alpha, probe_result.value);
                     break;
                 }
                 }

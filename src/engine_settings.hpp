@@ -7,7 +7,7 @@ namespace anka {
 		static constexpr const char* ENGINE_INFO_STRING = "Anka Chess Engine, Mehmet Eren Yesilyurt";
 		static constexpr int DEFAULT_HASH_SIZE = 32;
 		static constexpr int MIN_HASH_SIZE = 1;
-		static constexpr int MAX_HASH_SIZE = 2000000; // 2 TB
+		static constexpr int MAX_HASH_SIZE = 1ULL << 18; // 256 GiB
 		static constexpr int DEFAULT_NUM_THREADS = 1;
 		static constexpr int MIN_NUM_THREADS = 1;
 		static constexpr int MAX_NUM_THREADS = 128;
