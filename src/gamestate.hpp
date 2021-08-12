@@ -4,8 +4,10 @@
 #include "boarddefs.hpp"
 #include "hash.hpp"
 #include "attacks.hpp"
-#include <string>
 #include "move.hpp"
+#include "util.hpp"
+#include <string>
+
 
 namespace anka {
 	constexpr int kStateHistoryMaxSize = 1024;
@@ -22,7 +24,7 @@ namespace anka {
 	public:
 		GameState() : m_piecesBB{}, m_occupation{}, m_board{}, m_ep_target{ square::NOSQUARE },
 			m_side{ side::WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
-			m_zobrist_key{}, m_depth{}, m_state_history{}, m_total_material{0}
+			m_zobrist_key{}, m_ply{}, m_state_history{}, m_total_material{0}
 		{
 			m_state_history = new PositionRecord[kStateHistoryMaxSize];
 		}
@@ -68,6 +70,14 @@ namespace anka {
 		force_inline Bitboard Rooks() const { return m_piecesBB[piece_type::ROOK]; }
 		force_inline Bitboard Queens() const { return m_piecesBB[piece_type::QUEEN]; }
 		force_inline Bitboard Kings() const { return m_piecesBB[piece_type::KING]; }
+		force_inline Bitboard MajorPieces() const 
+		{
+			return m_piecesBB[piece_type::ROOK] | m_piecesBB[piece_type::QUEEN];
+		}
+		force_inline Bitboard MinorPieces() const
+		{
+			return m_piecesBB[piece_type::KNIGHT] | m_piecesBB[piece_type::BISHOP];
+		}
 
 		force_inline PieceType GetPiece(Square square) const { return m_board[square]; }
 
@@ -127,21 +137,28 @@ namespace anka {
 			return false;
 		}
 
-		/* TODO
-		* rewrite this
-		* http://www.talkchess.com/forum3/viewtopic.php?t=51000
-		*/
-		force_inline bool IsRepetition() const
-		{
-			int history_index = m_depth - 1;
-			int i = 0;
-			while (history_index >= 0) {
-				if (i == m_halfmove_clock)
-					break;
-				if (m_zobrist_key == m_state_history[history_index].zobrist_key)
+		// TODO: test this
+		inline bool IsDrawn() const {
+			// 50-move rule
+			if (m_halfmove_clock > 99) {
+				return true;
+			}
+
+			// insufficient material
+
+			// KvK, KNvK, KBvK, TODO: KBvKB (same color bishops)
+			if (m_total_material <= MATERIAL_VALUES[piece_type::BISHOP]) {
+				if (m_piecesBB[piece_type::PAWN] == 0) {
 					return true;
-				i++;
-				history_index--;
+				}
+			}
+			
+			int ply_limit = Max(m_ply - m_halfmove_clock, 0);
+			// repetition
+			for (int ply = m_ply - 2; ply >= ply_limit; ply-=2) {
+				if (m_zobrist_key == m_state_history[ply].zobrist_key) {
+					return true;
+				}
 			}
 
 			return false;
@@ -152,8 +169,8 @@ namespace anka {
 		force_inline int HalfMoveClock() const { return m_halfmove_clock; }
 		force_inline byte CastlingRights() const { return m_castling_rights; }
 		force_inline u64 PositionKey() const { return m_zobrist_key; }
-		force_inline int SearchDepth() const { return m_depth; }
-		force_inline void SetSearchDepth(int d) { m_depth = d; }
+		force_inline int Ply() const { return m_ply; }
+		force_inline void SetPly(int ply) { m_ply = ply; }
 		force_inline int TotalMaterial() const { return m_total_material; }
 
 		u64 CalculateKey();
@@ -214,7 +231,7 @@ namespace anka {
 		int m_halfmove_clock;
 		byte m_castling_rights;
 		u64 m_zobrist_key;
-		int m_depth;
+		int m_ply; // 0 at the root of the state history (not always the root of the search tree)
 		int m_total_material;
 		PositionRecord *m_state_history;
 	};

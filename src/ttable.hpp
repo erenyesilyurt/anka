@@ -5,22 +5,34 @@
 #include "gamestate.hpp"
 #include "movegen.hpp"
 #include <string.h>
-
+#include <inttypes.h>
 namespace anka {
 
 	enum class NodeType { EXACT, UPPERBOUND, LOWERBOUND };
 
-	// the result of a successful transposition table probe
-	struct TTResult {
-		Move move;
-		int depth;
+	// Each record is 12 bytes
+	struct TTRecord {
+		u32 key;
+		u32 move;
 		i16 value;
-		NodeType type;
+		byte depth;
+		byte node_type_and_age;
+
+		force_inline NodeType GetNodeType() const
+		{
+			return static_cast<NodeType>((node_type_and_age >> 6));
+		}
+
+		force_inline int GetAge() const
+		{
+			return node_type_and_age & 0x3f;
+		}
 	};
+	static_assert(sizeof(TTRecord) == 12, "TTRecord: unexpected struct alignment");
 
 	class TranspositionTable {
 	public:
-		TranspositionTable() : m_table {nullptr}, m_num_buckets(0), m_table_size(0), m_table_hits(0), m_current_age(0) {}
+		TranspositionTable() : m_table {nullptr}, m_num_buckets(0), m_table_size(0), m_table_hits(0), m_num_queries(0), m_current_age(0) {}
 		~TranspositionTable()
 		{
 			free(m_table);
@@ -31,6 +43,7 @@ namespace anka {
 			memset(m_table, 0, m_table_size);
 			m_current_age = 0;
 			m_table_hits = 0;
+			m_num_queries = 0;
 		}
 
 		inline bool Init(size_t hash_size)
@@ -64,24 +77,23 @@ namespace anka {
 			}
 		}
 
-		inline bool Get(u64 pos_hash, TTResult &result)
+		inline bool Get(u64 pos_hash, TTRecord &result, int ply)
 		{
 			ANKA_ASSERT(pos_hash != C64(0));
+			STATS(m_num_queries++);
 			size_t bucket_index = pos_hash & (m_num_buckets-1);
 			u32 pos_key = static_cast<u32>(pos_hash >> 32);
 
-			auto bucket = m_table[bucket_index];
 			for (int i = 0; i < num_cells; i++) {
-				if (bucket.records[i].key == pos_key) {
-					result.move = bucket.records[i].move;
-					result.value = bucket.records[i].value;
-					result.depth = bucket.records[i].depth;
-					result.type = static_cast<NodeType>((bucket.records[i].node_type_and_age >> 6));
-
-					ANKA_ASSERT(result.value <= EngineSettings::MAX_SCORE && result.value >= EngineSettings::MIN_SCORE);
-					ANKA_ASSERT(result.move != 0);
-					ANKA_ASSERT(result.depth <= EngineSettings::MAX_DEPTH && result.depth > 0);
-
+				if (m_table[bucket_index].records[i].key == pos_key) {
+					result = m_table[bucket_index].records[i];
+					if (result.value > UPPER_MATE_THRESHOLD) {
+						result.value -= ply;
+					}
+					else if (result.value < LOWER_MATE_THRESHOLD) {
+						result.value += ply;
+					}
+					STATS(m_table_hits++);
 					return true;
 				}
 			}
@@ -89,26 +101,31 @@ namespace anka {
 			return false;
 		}
 
-		inline void Put(u64 pos_hash, NodeType type, int depth, Move best_move, i16 value)
+		inline void Put(u64 pos_hash, NodeType type, int depth, Move best_move, i16 value, int ply, bool timeup)
 		{
-			ANKA_ASSERT(value <= EngineSettings::MAX_SCORE && value >= EngineSettings::MIN_SCORE);
+			if (timeup)
+				return;
 			ANKA_ASSERT(pos_hash != C64(0));
 			ANKA_ASSERT(best_move != 0);
-			ANKA_ASSERT(depth <= EngineSettings::MAX_DEPTH && depth >= 1);
+			ANKA_ASSERT(depth <= MAX_PLY && depth >= 1);
 
 			size_t bucket_index = pos_hash & (m_num_buckets - 1);
 			u32 pos_key = static_cast<u32>(pos_hash >> 32);
 
-			int chosen_index = 0;
-			int min_depth = EngineSettings::MAX_DEPTH;
+			int chosen_index = -1;
+			int min_depth = MAX_PLY + 1;
+			// replacement strategy: same entry > different age > lower depth
 			for (int i = 0; i < num_cells; i++) {
-				int record_age = m_table[bucket_index].records[i].node_type_and_age & 0x3f;
-				if (record_age != m_current_age) {
+				if (pos_key == m_table[bucket_index].records[i].key) {
 					chosen_index = i;
 					break;
 				}
+				int record_age = m_table[bucket_index].records[i].GetAge();
+				if (record_age != m_current_age) {
+					chosen_index = i;
+				}
 
-				if (m_table[bucket_index].records[i].depth < min_depth) {
+				if (chosen_index == - 1 && m_table[bucket_index].records[i].depth < min_depth) {
 					min_depth = m_table[bucket_index].records[i].depth;
 					chosen_index = i;
 				}
@@ -116,6 +133,12 @@ namespace anka {
 
 			int type_and_age = static_cast<int>(type);
 			type_and_age = (type_and_age << 6) | m_current_age;
+			if (value > UPPER_MATE_THRESHOLD) {
+				value += ply;
+			}
+			else if (value < LOWER_MATE_THRESHOLD) {
+				value -= ply;
+			}
 			m_table[bucket_index].records[chosen_index].key = pos_key;
 			m_table[bucket_index].records[chosen_index].value = value;
 			m_table[bucket_index].records[chosen_index].depth = depth;
@@ -124,17 +147,20 @@ namespace anka {
 		}
 
 		// extracts the principal variation moves into pv. returns the number of extracted moves.
-		inline int GetPrincipalVariation(GameState &pos, Move *pv, int max_pv_length)
+		inline int ExtractPV(GameState &pos, Move root_best_move, Move *pv, int max_pv_length)
 		{
 			MoveList<256> list;
-			TTResult node;
+			TTRecord node;
+
+			//pv[0] = root_best_move;
+			//pos.MakeMove(root_best_move);
 			int moves_made = 0;
 
 			while (true) {
 				u64 pos_key = pos.PositionKey();
 				list.GenerateLegalMoves(pos);
 
-				if (Get(pos_key, node) && node.type == NodeType::EXACT) {
+				if (Get(pos_key, node, 0) && node.GetNodeType() == NodeType::EXACT) {
 					// check move for legality
 					if (node.move == 0 || moves_made == max_pv_length)
 						break;
@@ -164,9 +190,63 @@ namespace anka {
 			m_current_age = ++m_current_age & 0x3f;
 		}
 
-		inline int GetAge() const {
+		inline int GetAge() const 
+		{
 			return m_current_age;
 		}
+
+		#ifdef STATS_ENABLED
+		inline void PrintStatistics() const
+		{
+			u64 n_used_buckets = 0;
+			u64 n_total_used_cells = 0;
+			u64 n_exact = 0;
+			u64 n_lowerbound = 0;
+			u64 n_upperbound = 0;
+
+			for (size_t b = 0; b < m_num_buckets; b++) {
+				auto& bucket = m_table[b];
+
+				int n_used_cells = 0;
+				for (int r = 0; r < num_cells; r++) {
+					if (bucket.records[r].key > 0) {
+						n_used_cells++;
+						n_total_used_cells++;
+
+						switch (bucket.records[r].GetNodeType())
+						{
+						case NodeType::EXACT:
+							n_exact++;
+							break;
+						case NodeType::LOWERBOUND:
+							n_lowerbound++;
+							break;
+						case NodeType::UPPERBOUND:
+							n_upperbound++;
+							break;
+						default:
+							break;
+						}
+					}
+				}
+
+				if (n_used_cells > 0)
+					n_used_buckets++;
+			}
+
+			printf("\nHASH TABLE STATISTICS\n");
+			printf("Hit rate: %.2f\n", m_table_hits / static_cast<double>(m_num_queries));
+			printf("Load factor (n_used_buckets / total_buckets): %.4f\n", n_used_buckets / static_cast<double>(m_num_buckets));
+			printf("Load factor (n_used_cells / total_buckets): %.4f\n", n_total_used_cells / static_cast<double>(m_num_buckets));
+			printf("Exact: %" PRIu64 "\n", n_exact);
+			printf("Lowerbound: %" PRIu64 "\n", n_lowerbound);
+			printf("Upperbound: %" PRIu64 "\n", n_upperbound);
+			double exact_perc = (n_exact / static_cast<double>(n_total_used_cells)) * 100.0;
+			double lower_perc = (n_lowerbound / static_cast<double>(n_total_used_cells)) * 100.0;
+			double upper_perc = (n_upperbound / static_cast<double>(n_total_used_cells)) * 100.0;
+			printf("EXACT: %.2f\%%, LB: %.2f\%%, UB: %.2f\%%\n", exact_perc, lower_perc, upper_perc);
+		}
+		#endif
 
 	private:
 		static constexpr int num_cells = 5;
@@ -183,16 +263,6 @@ namespace anka {
 		 *  [56:63] : node type and age // 2 bits and 6 bits
 		*/
 
-		// Each record is 12 bytes
-		struct TTRecord {
-			u32 key;
-			u32 move;
-			i16 value;
-			byte depth;
-			byte node_type_and_age;
-		};
-		static_assert(sizeof(TTRecord) == 12, "TTRecord: unexpected struct alignment");
-
 		// Each bucket is 64 bytes
 		struct TTBucket {
 			TTRecord records[num_cells];
@@ -204,6 +274,7 @@ namespace anka {
 		size_t m_num_buckets; // number of TTBuckets
 		size_t m_table_size; // total table size in bytes
 		u64 m_table_hits;
+		u64 m_num_queries;
 		TTBucket* m_table;
 		unsigned int m_current_age;
 		

@@ -34,21 +34,21 @@
 //			break;
 //		u64 pos_key = rng.rand64();
 //		NodeType type = static_cast<NodeType>(rng.rand64() % 3);
-//		int depth = rng.rand64(1, EngineSettings::MAX_DEPTH);
-//		int value = rng.rand(-EngineSettings::MAX_SCORE, EngineSettings::MAX_SCORE);
+//		int depth = rng.rand64(1, MAX_PLY);
+//		int value = rng.rand(-15000, 15000);
 //		Move best_move = rng.rand32();
 //
 //		int iteration_age = (i + 1) & 0x3f;
 //		ttable.IncrementAge();
 //		assert(ttable.GetAge() == iteration_age);
 //
-//		ttable.Put(pos_key, type, depth, best_move, value);
-//		TTResult result;
-//		ttable.Get(pos_key, result);
+//		ttable.Put(pos_key, type, depth, best_move, value, 0, false);
+//		TTRecord result;
+//		ttable.Get(pos_key, result, 0);
 //
-//		if (result.type != type) {
+//		if (result.GetNodeType() != type) {
 //			fail = true;
-//			fprintf(stderr, "Node type mismatch (stored: %d got: %d)\n", type, result.type);
+//			fprintf(stderr, "Node type mismatch (stored: %d got: %d)\n", type, result.GetNodeType());
 //		}
 //
 //		if (result.depth != depth) {

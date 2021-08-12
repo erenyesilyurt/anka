@@ -80,7 +80,6 @@ int anka::io::Read(char* buffer, int buffer_size)
 	return bytes_read;
 }
 
-
 void anka::io::PrintSearchResults(GameState &pos, const SearchResult& result)
 {
 	char move_str[6];
@@ -90,38 +89,24 @@ void anka::io::PrintSearchResults(GameState &pos, const SearchResult& result)
 		result.nps);
 		
 	if (result.best_score >= UPPER_MATE_THRESHOLD) {
-		int moves_to_mate = (ANKA_INFINITE - result.best_score);
+		int moves_to_mate = (ANKA_MATE - result.best_score >> 1) + 1;
 		printf("mate %d pv ", moves_to_mate);
 	}
 	else if (result.best_score <= LOWER_MATE_THRESHOLD) {
-		int moves_to_mate = (-ANKA_INFINITE - result.best_score);
+		int moves_to_mate = (-ANKA_MATE - result.best_score >> 1) + 1;
 		printf("mate %d pv ", moves_to_mate);
 	}
 	else {
 		printf("cp %d pv ", result.best_score);
 	}
 
-	for (int i = 0; i < result.pv_length; i++) {
+	for (int i = 0; i < MAX_PLY; i++) {
+		if (result.pv[i] == 0)
+			break;
 		move::ToString(result.pv[i], move_str);
 		printf("%s ", move_str);
-	}	
+	}
 
 	putchar('\n');
-	//#ifdef ANKA_DEBUG
-	//printf("Order Quality: %.2f\n", result.fh_f / (float)result.fh);
-	//#endif // ANKA_DEBUG
+	STATS(printf("Order Quality: %.2f\n", result.fh_f / (float)result.fh));
 }
-	
-//// used for debugging
-//void io::IndentedPrint(int num_spaces, const char* format, ...)
-//{
-//	while (num_spaces) {
-//		printf("  ");
-//		num_spaces--;
-//	}
-
-//	va_list args;
-//	va_start(args, format);
-//	vprintf(format, args);
-//	va_end(args);
-//}

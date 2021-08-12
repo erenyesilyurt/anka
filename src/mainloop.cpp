@@ -26,11 +26,12 @@ void anka::UciLoop()
 		
 		
 	char* buffer = new char[MAX_COMMAND_LENGTH];
-	char* line = buffer;
+
 	bool exit_loop = false;
 	while (!exit_loop) {
-		io::Read(line, MAX_COMMAND_LENGTH);
-
+		//io::Read(buffer, MAX_COMMAND_LENGTH);
+		fgets(buffer, MAX_COMMAND_LENGTH, stdin);
+		char* line = buffer;
 		if (strncmp(line, "go", 2) == 0) {
 			line += 2;
 			OnGo(root_pos, line, search_params);
@@ -46,6 +47,9 @@ void anka::UciLoop()
 		}
 		else if (strncmp(line, "isready", 7) == 0) {
 			OnIsReady();
+		}
+		else if (strncmp(line, "ucinewgame", 10) == 0) {
+			trans_table.Clear();
 		}
 		else if (strncmp(line, "uci", 3) == 0) {
 			OnUci();
@@ -67,6 +71,8 @@ void anka::UciLoop()
 		else if (strncmp(line, "anka_eval", 9) == 0) {
 			OnEval(root_pos);
 		}
+
+		fflush(stdin);
 	}
 
 	delete[] buffer;

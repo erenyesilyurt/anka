@@ -1,4 +1,5 @@
 #pragma once
+#include <limits.h>
 
 namespace anka {
 	struct EngineSettings {
@@ -8,27 +9,20 @@ namespace anka {
 		static constexpr int DEFAULT_HASH_SIZE = 32;
 		static constexpr int MIN_HASH_SIZE = 1;
 		static constexpr int MAX_HASH_SIZE = 1ULL << 18; // 256 GiB
-		static constexpr int DEFAULT_NUM_THREADS = 1;
-		static constexpr int MIN_NUM_THREADS = 1;
-		static constexpr int MAX_NUM_THREADS = 128;
-		static constexpr int MAX_SCORE = 32767;
-		static constexpr int MIN_SCORE = -32767;
-		static constexpr int MAX_DEPTH = 128;
 		static constexpr int PV_BUFFER_LENGTH = 64;
 		static constexpr int MOVE_OVERHEAD = 10;
 
 		int hash_size = DEFAULT_HASH_SIZE;
-		int num_threads = DEFAULT_NUM_THREADS;
-		bool null_move_pruning = true;
 	};
 
-	inline constexpr int ANKA_INFINITE = EngineSettings::MAX_SCORE;
-	inline constexpr int LOWER_MATE_THRESHOLD = -ANKA_INFINITE + EngineSettings::MAX_DEPTH;
-	inline constexpr int UPPER_MATE_THRESHOLD = ANKA_INFINITE - EngineSettings::MAX_DEPTH;
+	inline constexpr int ANKA_INFINITE = SHRT_MAX;
+	inline constexpr int ANKA_MATE = SHRT_MAX / 2;
+	inline constexpr int LOWER_MATE_THRESHOLD = -ANKA_MATE + 383;
+	inline constexpr int UPPER_MATE_THRESHOLD = ANKA_MATE - 383;
+	inline constexpr int MAX_PLY = 128;
 
 	struct SearchParams {
 		bool infinite = true;
-		bool null_move_pruning = true;
 
 		long long start_time = 0;
 		long long wtime = 0;
@@ -43,11 +37,11 @@ namespace anka {
 		bool uci_stop_flag = false;
 		bool uci_quit_flag = false;
 
+		int pv_index = 0;
 
 		void Clear()
 		{
 			infinite = true;
-			null_move_pruning = true;
 
 			start_time = 0;
 			wtime = 0;
@@ -61,6 +55,8 @@ namespace anka {
 			uci_stop_flag = false;
 			uci_quit_flag = false;
 			check_timeup = false;
+
+			pv_index = 0;
 		}
 	};
 

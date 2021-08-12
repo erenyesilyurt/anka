@@ -17,6 +17,16 @@ typedef int16_t i16;
 #define C64(x) UINT64_C(x)
 #define C64_s(x) INT64_C(x)
 
+//#define STATS_ENABLED
+
+#ifdef STATS_ENABLED
+#define STATS(x) \
+	do {x;} while (0)
+#else
+#define STATS(x)
+#endif
+	
+
 #if defined(_WIN32) || defined(_WIN64)
 #define PLATFORM_WINDOWS
 #elif defined(__unix__)

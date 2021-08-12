@@ -10,24 +10,18 @@
 namespace anka {
 
     inline constexpr int num_killers_per_slot = 2;
-    inline Move KillerMoves[EngineSettings::MAX_DEPTH][num_killers_per_slot];
+    inline Move KillerMoves[MAX_PLY][num_killers_per_slot];
 
-    force_inline void SetKillerMove(Move m, int depth)
+    force_inline void SetKillerMove(Move m, int ply)
     {
         #ifdef ANKA_DEBUG
-        if (KillerMoves[depth][0] != 0 && KillerMoves[depth][1] != 0)
-            assert(KillerMoves[depth][0] != KillerMoves[depth][1]);
+        if (KillerMoves[ply][0] != 0 && KillerMoves[ply][1] != 0)
+            assert(KillerMoves[ply][0] != KillerMoves[ply][1]);
         #endif // ANKA_DEBUG
 
-        if (KillerMoves[depth][0] == 0) {
-            KillerMoves[depth][0] = m;
-            return;
-        }
-        else if (KillerMoves[depth][0] == m) {
-            return;
-        }
-        else {
-            KillerMoves[depth][1] = m;
+        if (KillerMoves[ply][0] != m) {
+            KillerMoves[ply][1] = KillerMoves[ply][0];
+            KillerMoves[ply][0] = m;
         }
     }
 
@@ -38,7 +32,6 @@ namespace anka {
         u64 nps = C64(0);
         int best_score = 0;
         int depth = 0;
-        int pv_length = 0;
         Move* pv = nullptr;
         u64 fh = C64(1);
         u64 fh_f = C64(1);
@@ -47,14 +40,12 @@ namespace anka {
 	class SearchInstance {
 	public:
         u64 nodes_visited = C64(0);
-        u64 pv_hits = C64(0);
         u64 num_fail_high = C64(1);
         u64 num_fail_high_first = C64(1);
-        int selective_depth = C64(0);
         long long last_timecheck = 0;
 	public:
-        int Quiescence(GameState& pos, int alpha, int beta, SearchParams& params);
-        int PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
+        int Quiescence(GameState& pos, int alpha, int beta, int depth, int ply, SearchParams& params);
+        int PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params);
     private:
         void CheckStopConditions(SearchParams& params);
 	}; // SearchInstance

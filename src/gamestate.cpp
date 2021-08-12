@@ -24,7 +24,7 @@ void anka::GameState::Clear()
 	m_halfmove_clock = 0;
 	m_side = side::NONE;
 	m_zobrist_key = C64(0);
-	m_depth = 0;
+	m_ply = 0;
 	m_total_material = 0;
 }
 
@@ -202,13 +202,13 @@ bool anka::GameState::LoadPosition(std::string fen)
 // Create a move from the string and make sure it is a valid move in the position
 anka::Move anka::GameState::ParseMove(const char* line) const
 {
-	auto move_str_len = strlen(line);
+	char move_str[6];
+	//strcpy(move_str, line);
+	strncpy(move_str, line, 5);
+	move_str[5] = '\0';
+	auto move_str_len = strlen(move_str);
 	if (move_str_len < 4 || move_str_len > 5)
 		return 0;
-
-	char move_str[6];
-	strcpy(move_str, line);
-
 
 	if (move_str[0] > 'h' || move_str[0] < 'a')
 		return 0;
@@ -252,11 +252,10 @@ anka::Move anka::GameState::ParseMove(const char* line) const
 				else if (promoted == piece_type::KNIGHT && move_str[4] == 'n') {
 					return move;
 				}
-				else {
-					return 0;
-				}
 			}
-			return move;
+			else {
+				return move;
+			}
 		}
 	}
 

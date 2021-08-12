@@ -22,13 +22,6 @@ namespace anka {
 				EngineSettings::DEFAULT_HASH_SIZE,
 				EngineSettings::MIN_HASH_SIZE,
 				EngineSettings::MAX_HASH_SIZE);
-
-			printf("option name Threads type spin default %d min %d max %d\n",
-				EngineSettings::DEFAULT_NUM_THREADS,
-				EngineSettings::MIN_NUM_THREADS,
-				EngineSettings::MAX_NUM_THREADS);
-
-			printf("option name Nullmove type check default true\n");
 			printf("uciok\n");
 		}
 
@@ -54,24 +47,7 @@ namespace anka {
 					}
 				}
 			}
-			else if (strncmp(line, "Threads value ", 14) == 0) {
-				line += 14;
-				int num_threads = atoi(line);
-				if (num_threads >= EngineSettings::MIN_NUM_THREADS && num_threads <= EngineSettings::MAX_NUM_THREADS) {
-					options.num_threads = num_threads;
-				}
-			}
-			else if (strncmp(line, "Nullmove value ", 15) == 0)  {
-				line += 15;
-				if (strncmp(line, "true", 4) == 0) {
-					options.null_move_pruning = true;
-				}
-				else if (strncmp(line, "false", 5) == 0) {
-					options.null_move_pruning = false;
-				}
-			}
 		}
-
 
 		inline void OnPosition(GameState &pos, char* line)
 		{
@@ -99,16 +75,13 @@ namespace anka {
 					Move move = pos.ParseMove(line);
 					if (move == 0) {
 						fprintf(stderr, "AnkaError(MainLoop): Failed to parse position input.\n");
-						pos.LoadStartPosition();
-						return;
+						exit(EXIT_FAILURE);
 					}
 
 					pos.MakeMove(move);
 					line = strtok(NULL, " ");
 				}
 			}
-
-			pos.SetSearchDepth(0);
 		}
 
 		inline void OnGo(GameState &root_pos, char* line, SearchParams &params)

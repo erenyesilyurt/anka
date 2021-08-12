@@ -5,7 +5,6 @@
 #include "movegen.hpp"
 #include <thread>
 
-
 static void Init()
 {
 	// unbuffered output

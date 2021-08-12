@@ -114,11 +114,11 @@ namespace anka {
 		score += (num_w_bishops - num_b_bishops) * MATERIAL_VALUES[piece_type::BISHOP];
 		score += (num_w_rooks - num_b_rooks) * MATERIAL_VALUES[piece_type::ROOK];
 		score += (num_w_queens - num_b_queens) * MATERIAL_VALUES[piece_type::QUEEN];
-
+		// { 0, 0, 100, 300, 300, 500, 900, 0 };
 		int total_material = pos.TotalMaterial();
 
 		// calculate phase
-		constexpr int max_material = 8000; // start of game with all pieces on the board
+		constexpr int max_material = 7800; // start of game with all pieces on the board
 		constexpr int endgame_material = 1200; // 3 pawns and 1 bishop remaining per side
 
 		float phase = 1.0f;
@@ -212,50 +212,3 @@ namespace anka {
 		return score;
     }
 }
-
-
-//// PST bonus score additions
-
-//Bitboard pieces = pos.SideToPlay() == side::WHITE ? pos.WhitePieces() : pos.BlackPieces();
-
-//while (pieces) {
-//	Square sq = bitboard::BitScanForward(pieces);
-
-//	auto piece = pos.GetPiece(sq);
-//	int bonus_score = 0;
-//	sq ^= flip_mask; // vertically flip the square when side to play is white for pst lookup
-
-//	switch (piece) {
-//	case piece_type::PAWN:
-//		bonus_score = pawns_pst[sq];
-//		break;
-//	case piece_type::KNIGHT:
-//		bonus_score = knights_pst[sq];
-//		break;
-//	case piece_type::BISHOP:
-//		bonus_score = bishops_pst[sq];
-//		break;
-//	case piece_type::ROOK:
-//		bonus_score = rooks_pst[sq];
-//		break;
-//	case piece_type::QUEEN:
-//		bonus_score = queens_pst[sq];
-//		break;
-//	case piece_type::KING:
-//		bonus_score = (phase * king_pst[sq]) + ((1.0f - phase) * king_endgame_pst[sq]);
-//		break;
-//	}
-
-//	score += bonus_score;
-//	pieces &= pieces - 1;
-//}
-
-
-//int tempo_bonus = 5;
-//if (side == side::WHITE) {
-//	score += tempo_bonus;
-//}
-//if (side == side::BLACK) {
-//	score -= tempo_bonus;
-//	score = (-score);
-//}
