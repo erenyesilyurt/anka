@@ -247,4 +247,35 @@ namespace anka {
 		m_occupation = m_piecesBB[side::WHITE] | m_piecesBB[side::BLACK];
 		ANKA_ASSERT(Validate());
 	}
+
+	void GameState::MakeNullMove()
+	{
+		m_state_history[m_ply].zobrist_key = m_zobrist_key;
+		m_state_history[m_ply].ep_target = m_ep_target;
+		m_state_history[m_ply].half_move_clock = m_halfmove_clock;
+		m_state_history[m_ply].move_made = move::NULL_MOVE;
+
+		UpdateKeyWithEnPassant();
+		m_ep_target = square::NOSQUARE;
+		m_halfmove_clock = 0; // TODO: increment the old value and change the repetition detection code?
+		m_side = m_side ^ 1;
+		UpdateKeyWithEnPassant();
+
+		UpdateKeyWithSide();
+		m_ply++;
+	}
+
+	void GameState::UndoNullMove()
+	{
+		UpdateKeyWithEnPassant();
+		
+		m_ply = m_ply - 1;
+		m_side = m_side ^ 1;
+		
+		m_ep_target = m_state_history[m_ply].ep_target;
+		m_halfmove_clock = m_state_history[m_ply].half_move_clock;
+		UpdateKeyWithEnPassant();
+
+		UpdateKeyWithSide();
+	}
 }

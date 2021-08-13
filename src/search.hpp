@@ -45,6 +45,7 @@ namespace anka {
         long long last_timecheck = 0;
 	public:
         int Quiescence(GameState& pos, int alpha, int beta, int depth, int ply, SearchParams& params);
+        template <bool pruning = true>
         int PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params);
     private:
         void CheckStopConditions(SearchParams& params);

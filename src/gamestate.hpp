@@ -200,6 +200,8 @@ namespace anka {
 
 		void MakeMove(Move move);
 		void UndoMove();
+		void MakeNullMove();
+		void UndoNullMove();
 
 		bool Validate();
 		void Clear();

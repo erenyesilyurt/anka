@@ -6,7 +6,14 @@
 namespace anka {
     static char side_char[2] = { 'w', 'b' };
     static Move principal_variation[MAX_PLY * MAX_PLY]{};
+    
     static constexpr int nodes_per_time_check = 16383;
+    static constexpr int R_null = 2;
+
+    bool NullOk(GameState &pos)
+    {
+        return pos.TotalMaterial() > 1200 ? true : false;
+    }
 
     // returns true if there are no illegal moves in pv
     static bool ValidatePV(GameState& pos, const Move* pv)
@@ -256,6 +263,7 @@ namespace anka {
         return alpha;
     }
 
+    template<bool pruning>
     int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
@@ -315,6 +323,19 @@ namespace anka {
             }
             else {
                 return 0; // stalemate
+            }
+        }
+
+        if constexpr (pruning) {
+            if (!in_check && !is_pv) {
+                // Null move pruning
+                if (depth >= R_null && NullOk(pos)) {
+                    pos.MakeNullMove();
+                    int score = -PVS<false>(pos, -beta, -beta+1, depth - R_null, ply + 1, false, params);
+                    pos.UndoNullMove();
+                    if (score >= beta)
+                        return score;
+                }
             }
         }
 

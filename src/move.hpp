@@ -28,6 +28,8 @@ namespace anka {
 
 
 	namespace move {
+		enum {NO_MOVE = 0, NULL_MOVE = 0xffffffff};
+
 
 		inline constexpr int QUIET_SCORE = 0;
 		inline constexpr int CASTLE_SCORE = 100;
