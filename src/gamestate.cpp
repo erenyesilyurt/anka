@@ -25,7 +25,8 @@ void anka::GameState::Clear()
 	m_side = side::NONE;
 	m_zobrist_key = C64(0);
 	m_ply = 0;
-	m_total_material = 0;
+	m_materials[side::WHITE] = 0;
+	m_materials[side::BLACK] = 0;
 }
 
 bool anka::GameState::LoadPosition(std::string fen)
@@ -145,13 +146,16 @@ bool anka::GameState::LoadPosition(std::string fen)
 
 			bitboard::SetBit(m_piecesBB[piece], sq);
 			m_board[sq] = piece;
-			m_total_material += MATERIAL_VALUES[piece];
 
 
-			if (isupper(c))
+			if (isupper(c)) {
 				bitboard::SetBit(m_piecesBB[side::WHITE], sq);
-			else if (islower(c))
+				m_materials[side::WHITE] += MATERIAL_VALUES[piece];
+			}
+			else if (islower(c)) {
 				bitboard::SetBit(m_piecesBB[side::BLACK], sq);
+				m_materials[side::BLACK] += MATERIAL_VALUES[piece];
+			}
 			else {
 				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";
 				return false;

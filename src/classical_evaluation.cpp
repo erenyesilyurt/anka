@@ -80,40 +80,15 @@ namespace anka {
 			-50,-30,-30,-30,-30,-30,-30,-50
 		};
 
-    // an implementation of the simple evaluation function proposed by Tomasz Michniewski
-	// Evaluates the position from white's perspective then negates the score if side to play is black
-    int ClassicEvaluation(const GameState& pos)
+    // based on the Simple Evaluation Function by Tomasz Michniewski
+	// Evaluates the position from side to play's perspective
+    int ClassicalEvaluation(const GameState& pos)
     {
 		Side side = pos.SideToPlay();
 		int flip_mask = 56 & (side - 1); // if black: 0 , if white: 56
 
-		int score = 0;
+		int score = pos.Material(side::WHITE) - pos.Material(side::BLACK);
 
-		int num_pawns = bitboard::PopCount(pos.Pawns());
-		int num_w_pawns = bitboard::PopCount(pos.Pawns() & pos.WhitePieces());
-		int num_b_pawns = num_pawns - num_w_pawns;
-
-		int num_knights = bitboard::PopCount(pos.Knights());
-		int num_w_knights = bitboard::PopCount(pos.Knights() & pos.WhitePieces());
-		int num_b_knights = num_knights - num_w_knights;
-
-		int num_bishops = bitboard::PopCount(pos.Bishops());
-		int num_w_bishops = bitboard::PopCount(pos.Bishops() & pos.WhitePieces());
-		int num_b_bishops = num_bishops - num_w_bishops;
-
-		int num_rooks = bitboard::PopCount(pos.Rooks());
-		int num_w_rooks = bitboard::PopCount(pos.Rooks() & pos.WhitePieces());
-		int num_b_rooks = num_rooks - num_w_rooks;
-
-		int num_queens = bitboard::PopCount(pos.Queens());
-		int num_w_queens = bitboard::PopCount(pos.Queens() & pos.WhitePieces());
-		int num_b_queens = num_queens - num_w_queens;
-
-		score += (num_w_pawns - num_b_pawns) * MATERIAL_VALUES[piece_type::PAWN];
-		score += (num_w_knights - num_b_knights) * MATERIAL_VALUES[piece_type::KNIGHT];
-		score += (num_w_bishops - num_b_bishops) * MATERIAL_VALUES[piece_type::BISHOP];
-		score += (num_w_rooks - num_b_rooks) * MATERIAL_VALUES[piece_type::ROOK];
-		score += (num_w_queens - num_b_queens) * MATERIAL_VALUES[piece_type::QUEEN];
 		// { 0, 0, 100, 300, 300, 500, 900, 0 };
 		int total_material = pos.TotalMaterial();
 

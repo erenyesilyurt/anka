@@ -230,7 +230,7 @@ namespace anka {
         else {
             move_list.GenerateLegalCaptures(pos);
             // stand pat
-            int eval = ClassicEvaluation(pos);
+            int eval = ClassicalEvaluation(pos);
 
             if (eval > alpha) {
                 if (eval >= beta) {

@@ -181,7 +181,7 @@ namespace anka {
 
 		inline void OnEval(GameState& pos)
 		{
-			int eval_score = ClassicEvaluation(pos);
+			int eval_score = ClassicalEvaluation(pos);
 			printf("Static eval: %+.2f (%+d cp)\n", eval_score / 100.0f, eval_score);
 		}
 	}

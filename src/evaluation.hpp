@@ -2,5 +2,5 @@
 #include "gamestate.hpp"
 
 namespace anka {
-	int ClassicEvaluation(const GameState& pos);
+	int ClassicalEvaluation(const GameState& pos);
 }

@@ -26,10 +26,15 @@ namespace anka {
 			valid = false;
 		}
 
-		int materials = 0;
+		int materials[2]{ 0 };
 		for (Square sq = 0; sq < 64; sq++) {
 			auto piece_type = m_board[sq];
-			materials += MATERIAL_VALUES[piece_type];
+			if (bitboard::BitIsSet(WhitePieces(), sq)) {
+				materials[side::WHITE] += MATERIAL_VALUES[piece_type];
+			}
+			else if (bitboard::BitIsSet(BlackPieces(), sq)) {
+				materials[side::BLACK] += MATERIAL_VALUES[piece_type];
+			}
 
 			switch (piece_type)
 			{
@@ -82,8 +87,14 @@ namespace anka {
 			}
 		}
 
-		if (materials != m_total_material) {
-			fprintf(stderr, "AnkaError (Validate): Material score mismatch. (Pos: %d Calculated: %d)\n", m_total_material, materials);
+		if (materials[side::WHITE] != m_materials[side::WHITE]) {
+			fprintf(stderr, "AnkaError (Validate): Material score mismatch for WHITE. (Pos: %d Calculated: %d)\n", m_materials[side::WHITE], materials[side::WHITE]);
+			valid = false;
+			Print();
+		}
+		
+		if (materials[side::BLACK] != m_materials[side::BLACK]) {
+			fprintf(stderr, "AnkaError (Validate): Material score mismatch for BLACK. (Pos: %d Calculated: %d)\n", m_materials[side::BLACK], materials[side::BLACK]);
 			valid = false;
 			Print();
 		}

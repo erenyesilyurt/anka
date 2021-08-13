@@ -24,7 +24,7 @@ namespace anka {
 	public:
 		GameState() : m_piecesBB{}, m_occupation{}, m_board{}, m_ep_target{ square::NOSQUARE },
 			m_side{ side::WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
-			m_zobrist_key{}, m_ply{}, m_state_history{}, m_total_material{0}
+			m_zobrist_key{}, m_ply{}, m_state_history{}, m_materials{0}
 		{
 			m_state_history = new PositionRecord[kStateHistoryMaxSize];
 		}
@@ -145,9 +145,9 @@ namespace anka {
 			}
 
 			// insufficient material
-
+			
 			// KvK, KNvK, KBvK, TODO: KBvKB (same color bishops)
-			if (m_total_material <= MATERIAL_VALUES[piece_type::BISHOP]) {
+			if (TotalMaterial() <= MATERIAL_VALUES[piece_type::BISHOP]) {
 				if (m_piecesBB[piece_type::PAWN] == 0) {
 					return true;
 				}
@@ -171,7 +171,8 @@ namespace anka {
 		force_inline u64 PositionKey() const { return m_zobrist_key; }
 		force_inline int Ply() const { return m_ply; }
 		force_inline void SetPly(int ply) { m_ply = ply; }
-		force_inline int TotalMaterial() const { return m_total_material; }
+		force_inline int Material(Side color) const { ANKA_ASSERT(color <= side::BLACK); return m_materials[color]; }
+		force_inline int TotalMaterial() const { return m_materials[side::WHITE] + m_materials[side::BLACK]; }
 
 		u64 CalculateKey();
 
@@ -234,7 +235,7 @@ namespace anka {
 		byte m_castling_rights;
 		u64 m_zobrist_key;
 		int m_ply; // 0 at the root of the state history (not always the root of the search tree)
-		int m_total_material;
+		int m_materials[2];
 		PositionRecord *m_state_history;
 	};
 } // namespace anka
