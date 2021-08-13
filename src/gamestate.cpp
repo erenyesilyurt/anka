@@ -137,6 +137,17 @@ bool anka::GameState::LoadPosition(std::string fen)
 			Square sq = square::RankFileToSquare(r, f);
 			f++;
 
+			PieceType piece = piece_type::CharToPieceType(c);
+			if (piece == piece_type::NOPIECE) {
+				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";
+				return false;
+			}
+
+			bitboard::SetBit(m_piecesBB[piece], sq);
+			m_board[sq] = piece;
+			m_total_material += MATERIAL_VALUES[piece];
+
+
 			if (isupper(c))
 				bitboard::SetBit(m_piecesBB[side::WHITE], sq);
 			else if (islower(c))
@@ -144,48 +155,6 @@ bool anka::GameState::LoadPosition(std::string fen)
 			else {
 				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";
 				return false;
-			}
-
-			switch (c) {
-			case 'p':
-			case 'P':
-				m_total_material += MATERIAL_VALUES[piece_type::PAWN];
-				bitboard::SetBit(m_piecesBB[piece_type::PAWN], sq);
-				m_board[sq] = piece_type::PAWN;
-				break;
-			case 'n':
-			case 'N':
-				m_total_material += MATERIAL_VALUES[piece_type::KNIGHT];
-				bitboard::SetBit(m_piecesBB[piece_type::KNIGHT], sq);
-				m_board[sq] = piece_type::KNIGHT;
-				break;
-			case 'b':
-			case 'B':
-				m_total_material += MATERIAL_VALUES[piece_type::BISHOP];
-				bitboard::SetBit(m_piecesBB[piece_type::BISHOP], sq);
-				m_board[sq] = piece_type::BISHOP;
-				break;
-			case 'r':
-			case 'R':
-				m_total_material += MATERIAL_VALUES[piece_type::ROOK];
-				bitboard::SetBit(m_piecesBB[piece_type::ROOK], sq);
-				m_board[sq] = piece_type::ROOK;
-				break;
-			case 'q':
-			case 'Q':
-				m_total_material += MATERIAL_VALUES[piece_type::QUEEN];
-				bitboard::SetBit(m_piecesBB[piece_type::QUEEN], sq);
-				m_board[sq] = piece_type::QUEEN;
-				break;
-			case 'k':
-			case 'K':
-				bitboard::SetBit(m_piecesBB[piece_type::KING], sq);
-				m_board[sq] = piece_type::KING;
-				break;
-			default:
-				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";
-				return false;
-
 			}
 		}
 	}

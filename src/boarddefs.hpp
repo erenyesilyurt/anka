@@ -120,6 +120,32 @@ namespace anka {
 		{
 			return lut::LUT_ISSLIDER[p];
 		}
+
+		force_inline PieceType CharToPieceType(char c)
+		{
+			switch (c) {
+			case 'p':
+			case 'P':
+				return PAWN;
+			case 'n':
+			case 'N':
+				return KNIGHT;
+			case 'b':
+			case 'B':
+				return BISHOP;
+			case 'r':
+			case 'R':
+				return ROOK;
+			case 'q':
+			case 'Q':
+				return QUEEN;
+			case 'k':
+			case 'K':
+				return KING;
+			default:
+				return NOPIECE;
+			}
+		}
 	};
 
 	namespace side {
