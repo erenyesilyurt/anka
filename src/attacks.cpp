@@ -10,7 +10,29 @@ namespace anka {
 		Bitboard _knight_attacks[64];
 		Bitboard _king_attacks[64];
 		Bitboard _pawn_attacks[2][64];
+		Bitboard _pawn_front_spans[2][64];
 		Bitboard _in_between[64][64];
+		Bitboard _adjacent_files[8];
+
+
+		template <int dir>
+		static Bitboard Fill(Bitboard b)
+		{
+			static_assert(dir == NORTH || dir == SOUTH, "Invalid fill direction");
+			
+			if constexpr (dir == NORTH) {
+				b |= (b << 8);
+				b |= (b << 16);
+				b |= (b << 32);
+			}
+			else if constexpr (dir == SOUTH) {
+				b |= (b >> 8);
+				b |= (b >> 16);
+				b |= (b >> 32);
+			}
+
+			return b;
+		}
 
 		Bitboard RookAttacksSlow(Square sq, Bitboard relevant_occ)
 		{
@@ -94,7 +116,7 @@ namespace anka {
 				u64 magic = magics::bishop_magics[sq].magic_factor;
 				int table_offset = magics::bishop_magics[sq].table_offset;
 
-				auto occlist = GenerateBishopOccupancy(sq); // broken
+				auto occlist = GenerateBishopOccupancy(sq);
 				for (u64 occ : occlist) {
 					Bitboard a = occ;
 					
@@ -111,7 +133,7 @@ namespace anka {
 				u64 magic = magics::rook_magics[sq].magic_factor;
 				int table_offset = magics::rook_magics[sq].table_offset;
 
-				auto occlist = GenerateRookOccupancy(sq); // broken
+				auto occlist = GenerateRookOccupancy(sq);
 				for (u64 occ : occlist) {
 					u64 blockers = occ & mask;
 					int index = (blockers * magic) >> (64 - 12);
@@ -138,8 +160,6 @@ namespace anka {
 				}
 				_knight_attacks[sq] = attack_map;
 			}
-
-
 		}
 
 		static void InitKingAttacks()
@@ -196,6 +216,31 @@ namespace anka {
 				}
 				_pawn_attacks[side::BLACK][sq] = attack_map;
 			}
+		}
+
+		static void InitPawnFrontSpans()
+		{
+			for (Square sq = square::A1; sq <= square::H8; sq++) {
+				Bitboard b = 0;
+				bitboard::SetBit(b, sq);
+				b |= bitboard::StepOne<WEST>(b);
+				b |= bitboard::StepOne<EAST>(b);
+				_pawn_front_spans[side::WHITE][sq] = Fill<NORTH>(bitboard::StepOne<NORTH>(b));
+				_pawn_front_spans[side::BLACK][sq] = Fill<SOUTH>(bitboard::StepOne<SOUTH>(b));
+			}
+		}
+
+		static void InitAdjacentFiles()
+		{
+			for (Square sq = square::A1; sq <= square::H1; sq++) {
+				Bitboard b = 0;
+				bitboard::SetBit(b, sq);
+				b |= bitboard::StepOne<WEST>(b);
+				b |= bitboard::StepOne<EAST>(b);
+				bitboard::ClearBit(b, sq);
+				_adjacent_files[sq] = Fill<NORTH>(b);
+			}
+
 		}
 
 		static void InitInBetween()
@@ -255,6 +300,8 @@ namespace anka {
 			InitKnightAttacks();
 			InitKingAttacks();
 			InitPawnAttacks();
+			InitPawnFrontSpans();
+			InitAdjacentFiles();
 			InitInBetween();
 		}
 

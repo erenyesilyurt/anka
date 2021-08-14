@@ -66,28 +66,28 @@ namespace anka {
 		template<int dir>
 		force_inline Bitboard StepOne(const Bitboard bitboard)
 		{
-			if constexpr (dir == direction::N) {
+			if constexpr (dir == NORTH) {
 				return bitboard << 8;
 			}
-			else if (dir == direction::S) {
+			else if (dir == SOUTH) {
 				return bitboard >> 8;
 			}
-			else if (dir == direction::E) {
+			else if (dir == EAST) {
 				return (bitboard << 1) & C64(0xfefefefefefefefe);
 			}
-			else if (dir == direction::W) {
+			else if (dir == WEST) {
 				return (bitboard >> 1) & C64(0x7f7f7f7f7f7f7f7f);
 			}
-			else if (dir == direction::NE) {
+			else if (dir == NORTHEAST) {
 				return (bitboard << 9) & C64(0xfefefefefefefefe);
 			}
-			else if (dir == direction::NW) {
+			else if (dir == NORTHWEST) {
 				return (bitboard << 7) & C64(0x7f7f7f7f7f7f7f7f);
 			}
-			else if (dir == direction::SE) {
+			else if (dir == SOUTHEAST) {
 				return (bitboard >> 7) & C64(0xfefefefefefefefe);
 			}
-			else if (dir == direction::SW) {
+			else if (dir == SOUTHWEST) {
 				return (bitboard >> 9) & C64(0x7f7f7f7f7f7f7f7f);
 			}
 		}

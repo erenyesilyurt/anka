@@ -12,14 +12,38 @@ namespace anka {
 			+ p_phase[piece_type::BISHOP] * 4 + p_phase[piece_type::ROOK] * 4
 			+ p_phase[piece_type::QUEEN] * 2;
 
-		constexpr int piece_values_mg[8] = { 0, 0, 100, 320, 330, 500, 900, 0 };
-		constexpr int piece_values_eg[8] = { 0, 0, 100, 320, 330, 500, 900, 0 };
-		constexpr int mobility_scores[8] = { 0, 0, 2, 3, 2, 2, 2, 0 };
+		// indexed by phase and piece type
+		constexpr int piece_values[2][8] = { 
+			{0, 0, 100, 320, 330, 500, 900, 0}, // midgame
+			{0, 0, 100, 320, 330, 500, 900, 0}  // endgame
+		};
+		constexpr int mobility_weights[2][8] = { 
+			{ 0, 0, 2, 3, 2, 2, 2, 0 }, // midgame
+			{ 0, 0, 2, 3, 2, 2, 2, 0 }  // endgame
+		};
+
+		// indexed by phase and rank
+		constexpr int passed_bonus_white[2][8] { 0, 10, 15, 20, 25, 30, 35, 0};
+		constexpr int passed_bonus_black[2][8]{ 0, 35, 30, 25, 20, 15, 10 };
+
+		// indexed by phase and file
+		constexpr int isolated_penalty[2][8]{
+			{ 10, 15, 20, 25, 25, 20, 15, 10 }, // midgame
+			{ 10, 15, 20, 25, 25, 20, 15, 10 }  // endgame
+		};
+
+		// A B C D E F G H
 		constexpr int tempo_bonus = 5;
 		constexpr int bishop_pair_bonus = 10;
 
+
 		int PST_mg[2][8][64] {0};
 		int PST_eg[2][8][64] {0};
+
+		struct EvalScore {
+			int mid_game = 0;
+			int end_game = 0;
+		};
 
 	}
 
@@ -44,48 +68,53 @@ namespace anka {
 		}
 	}
 
-
-	int PawnMobility(Bitboard white_pawns, Bitboard black_pawns, Bitboard empty_squares)
+	EvalScore PawnMobility(Bitboard white_pawns, Bitboard black_pawns, Bitboard empty_squares)
 	{
 		using namespace piece_type;
-		int score = 0;
+		EvalScore score;
 		
 		// white pawns
-		Bitboard single_push_targets = bitboard::StepOne<direction::N>(white_pawns) & empty_squares;
-		score += mobility_scores[PAWN] * bitboard::PopCount(single_push_targets);
+		Bitboard single_push_targets = bitboard::StepOne<NORTH>(white_pawns) & empty_squares;
+		score.mid_game += mobility_weights[MIDGAME][PAWN] * bitboard::PopCount(single_push_targets);
+		score.end_game += mobility_weights[ENDGAME][PAWN] * bitboard::PopCount(single_push_targets);
 
 		// opponent pawns
-		single_push_targets = bitboard::StepOne<direction::S>(black_pawns) & empty_squares;
-		score -= mobility_scores[PAWN] * bitboard::PopCount(single_push_targets);
+		single_push_targets = bitboard::StepOne<SOUTH>(black_pawns) & empty_squares;
+		score.mid_game -= mobility_weights[MIDGAME][PAWN] * bitboard::PopCount(single_push_targets);
+		score.end_game -= mobility_weights[ENDGAME][PAWN] * bitboard::PopCount(single_push_targets);
 		
 		return score;
 	}
 
-	int PieceMobility(PieceType piece, Square sq, Bitboard occupation)
+	EvalScore PieceMobility(PieceType piece, Square sq, Bitboard occupation, Bitboard ally_occupation)
 	{
 		using namespace piece_type;
+		EvalScore score;
 		Bitboard att = 0;
-		Bitboard empty = ~occupation;
+		Bitboard legal_squares = ~ally_occupation; // pseudo legal. empty and opponent squares
 
 		switch (piece)
 		{
 		case KNIGHT:
-			att = attacks::KnightAttacks(sq) & empty;
+			att = attacks::KnightAttacks(sq) & legal_squares;
 			break;
 		case BISHOP:
-			att = attacks::BishopAttacks(sq, occupation) & empty;
+			att = attacks::BishopAttacks(sq, occupation) & legal_squares;
 			break;
 		case ROOK:
-			att = attacks::RookAttacks(sq, occupation) & empty;
+			att = attacks::RookAttacks(sq, occupation) & legal_squares;
 			break;
 		case QUEEN: 
-			att = attacks::QueenAttacks(sq, occupation) & empty;
+			att = attacks::QueenAttacks(sq, occupation) & legal_squares;
 			break;
 		default:
-			return 0;
+			return score;
 		}
 
-		return mobility_scores[piece] * bitboard::PopCount(att);
+		int num_attacks = bitboard::PopCount(att);
+		score.mid_game = mobility_weights[MIDGAME][piece] * num_attacks;
+		score.end_game = mobility_weights[ENDGAME][piece] * num_attacks;
+		return score;
 	}
 
 
@@ -97,8 +126,7 @@ namespace anka {
 
 		// scores are evaluated from white's perspective
 		// and flipped at the end if side to play is black
-		int mg_score = 0;
-		int eg_score = 0;
+		EvalScore score;
 		int phase = opening_phase;
 	
 		Bitboard white_pawns = pos.Pieces<side::WHITE, PAWN>();
@@ -109,29 +137,59 @@ namespace anka {
 		Bitboard empty = ~occ;
 
 		// Pawn Mobility
-		int pawn_mobility = PawnMobility(white_pawns, black_pawns, empty);
-		mg_score += pawn_mobility;
-		eg_score += pawn_mobility;
+		EvalScore pawn_mobility = PawnMobility(white_pawns, black_pawns, empty);
+		score.mid_game += pawn_mobility.mid_game;
+		score.end_game += pawn_mobility.end_game;
 
+		// isolated pawn: a pawn with no friendly pawns on adjacent files
+		// passed pawn: a pawn with no opponent pawns in front or adjacent files
 
 		while (white_pawns) {
 			Square sq = bitboard::BitScanForward(white_pawns);
-			mg_score += piece_values_mg[PAWN];
-			eg_score += piece_values_eg[PAWN];
+			score.mid_game += piece_values[MIDGAME][PAWN];
+			score.end_game += piece_values[ENDGAME][PAWN];
 
-			mg_score += PST_mg[side::WHITE][PAWN][sq];
-			eg_score += PST_eg[side::WHITE][PAWN][sq];
+			score.mid_game += PST_mg[side::WHITE][PAWN][sq];
+			score.end_game += PST_eg[side::WHITE][PAWN][sq];
+
+			//// check if passed pawn
+			if ((attacks::PawnFrontSpan(sq, side::WHITE) & pos.Pieces<side::BLACK, PAWN>()) == 0) {
+				int rank = square::GetRank(sq);
+				score.mid_game += passed_bonus_white[MIDGAME][rank];
+				score.end_game += passed_bonus_white[ENDGAME][rank];
+			}
+
+			//// check if isolated pawn
+			int file = square::GetFile(sq);
+			if ((attacks::AdjacentFiles(file) & pos.Pieces<side::WHITE, PAWN>()) == 0) {
+				score.mid_game -= isolated_penalty[MIDGAME][file];
+				score.end_game -= isolated_penalty[ENDGAME][file];
+			}
 
 			white_pawns &= white_pawns - 1;
 		}
 
 		while (black_pawns) {
 			Square sq = bitboard::BitScanForward(black_pawns);
-			mg_score -= piece_values_mg[PAWN];
-			eg_score -= piece_values_eg[PAWN];
+			score.mid_game -= piece_values[MIDGAME][PAWN];
+			score.end_game -= piece_values[ENDGAME][PAWN];
 
-			mg_score -= PST_mg[side::BLACK][PAWN][sq];
-			eg_score -= PST_eg[side::BLACK][PAWN][sq];
+			score.mid_game -= PST_mg[side::BLACK][PAWN][sq];
+			score.end_game -= PST_eg[side::BLACK][PAWN][sq];
+
+			//// check if passed pawn
+			if ((attacks::PawnFrontSpan(sq, side::BLACK) & pos.Pieces<side::WHITE, PAWN>()) == 0) {
+				int rank = square::GetRank(sq);
+				score.mid_game -= passed_bonus_black[MIDGAME][rank];
+				score.end_game -= passed_bonus_black[ENDGAME][rank];
+			}
+
+			//// check if isolated pawn
+			int file = square::GetFile(sq);
+			if ((attacks::AdjacentFiles(file) & pos.Pieces<side::WHITE, PAWN>()) == 0) {
+				score.mid_game += isolated_penalty[MIDGAME][file];
+				score.end_game += isolated_penalty[ENDGAME][file];
+			}
 
 			black_pawns &= black_pawns - 1;
 		}
@@ -142,15 +200,15 @@ namespace anka {
 			auto piece = pos.GetPiece(sq);
 			phase -= p_phase[piece];
 			
-			mg_score -= piece_values_mg[piece];
-			eg_score -= piece_values_eg[piece];
+			score.mid_game -= piece_values[MIDGAME][piece];
+			score.end_game -= piece_values[ENDGAME][piece];
 
-			mg_score -= PST_mg[side::BLACK][piece][sq];
-			eg_score -= PST_eg[side::BLACK][piece][sq];
+			score.mid_game -= PST_mg[side::BLACK][piece][sq];
+			score.end_game -= PST_eg[side::BLACK][piece][sq];
 
-			int piece_mobility = PieceMobility(piece, sq, occ);
-			mg_score -= piece_mobility;
-			eg_score -= piece_mobility;
+			EvalScore piece_mobility = PieceMobility(piece, sq, occ, pos.Pieces<side::BLACK>());
+			score.mid_game -= piece_mobility.mid_game;
+			score.end_game -= piece_mobility.end_game;
 
 			black_pieces &= black_pieces - 1;		
 		}
@@ -160,15 +218,15 @@ namespace anka {
 			auto piece = pos.GetPiece(sq);
 			phase -= p_phase[piece];
 			
-			mg_score += piece_values_mg[piece];
-			eg_score += piece_values_eg[piece];
+			score.mid_game += piece_values[MIDGAME][piece];
+			score.end_game += piece_values[ENDGAME][piece];
 
-			mg_score += PST_mg[side::WHITE][piece][sq];
-			eg_score += PST_eg[side::WHITE][piece][sq];
+			score.mid_game += PST_mg[side::WHITE][piece][sq];
+			score.end_game += PST_eg[side::WHITE][piece][sq];
 
-			int piece_mobility = PieceMobility(piece, sq, occ);
-			mg_score += piece_mobility;
-			eg_score += piece_mobility;
+			EvalScore piece_mobility = PieceMobility(piece, sq, occ, pos.Pieces<side::WHITE>());
+			score.mid_game += piece_mobility.mid_game;
+			score.end_game += piece_mobility.end_game;
 
 			white_pieces &= white_pieces - 1;
 		}
@@ -178,13 +236,13 @@ namespace anka {
 		int num_black_bishops = bitboard::PopCount(pos.Pieces<side::BLACK, piece_type::BISHOP>());
 
 		if (num_white_bishops > 1) {
-			mg_score += bishop_pair_bonus;
-			eg_score += bishop_pair_bonus;
+			score.mid_game += bishop_pair_bonus;
+			score.end_game += bishop_pair_bonus;
 		}
 
 		if (num_black_bishops > 1) {
-			mg_score -= bishop_pair_bonus;
-			eg_score -= bishop_pair_bonus;
+			score.mid_game -= bishop_pair_bonus;
+			score.end_game -= bishop_pair_bonus;
 		}
 
 		// Calculate game phase
@@ -193,18 +251,18 @@ namespace anka {
 
 		// Interpolate the score between middle game and end game.
 		// (phase = 0 at the beginning and phase = 256 at the endgame.)
-		int score = ((mg_score * (256 - phase)) + (eg_score * phase)) >> 8;
+		int result = ((score.mid_game * (256 - phase)) + (score.end_game * phase)) >> 8;
 
-		Side side = pos.SideToPlay();
+		Side color = pos.SideToPlay();
 
-		if (side == side::WHITE) {
-			score += tempo_bonus;
+		if (color == side::WHITE) {
+			result += tempo_bonus;
 		}
-		if (side == side::BLACK) {
-			score -= tempo_bonus;
-			score = (-score);
+		if (color == side::BLACK) {
+			result -= tempo_bonus;
+			result = (-result);
 		}
 
-		return score;
+		return result;
     }
 }

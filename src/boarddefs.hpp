@@ -14,10 +14,12 @@ namespace anka {
 	typedef int Side;
 	typedef int Square;
 
-	namespace direction {
-		enum { E = 1, W = -1, N = 8, NE = 9, NW = 7, S = -8, SE = -7, SW = -9 };
-	}
+	// Directions
+	enum Direction { EAST = 1, WEST = -1, NORTH = 8, NORTHEAST = 9, NORTHWEST = 7, SOUTH = -8, SOUTHEAST = -7, SOUTHWEST = -9 };
 	
+	// Game phase
+	enum Phase {MIDGAME, ENDGAME};
+
 	namespace rank {
 		force_inline const char* ToString(Rank r)
 		{

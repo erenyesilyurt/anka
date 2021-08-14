@@ -154,6 +154,8 @@ namespace anka {
 		extern Bitboard _knight_attacks[64];
 		extern Bitboard _king_attacks[64];
 		extern Bitboard _pawn_attacks[2][64];
+		extern Bitboard _pawn_front_spans[2][64];
+		extern Bitboard _adjacent_files[8];
 		extern Bitboard _in_between[64][64];
 
 		void InitAttacks();
@@ -169,6 +171,12 @@ namespace anka {
 		force_inline Bitboard PawnAttacks(Square sq, Side attacking_side)
 		{
 			return _pawn_attacks[attacking_side][sq];
+		}
+
+		// Front spawn of a pawn on sq, includes adjacent files
+		force_inline Bitboard PawnFrontSpan(Square sq, Side color)
+		{
+			return _pawn_front_spans[color][sq];
 		}
 
 		// returns the attack map for a knight on the given square
@@ -202,6 +210,11 @@ namespace anka {
 		force_inline Bitboard QueenAttacks(Square square, u64 occupancy)
 		{
 			return BishopAttacks(square, occupancy) | RookAttacks(square, occupancy);
+		}
+
+		force_inline Bitboard AdjacentFiles(File file)
+		{
+			return _adjacent_files[file];
 		}
 
 		force_inline Bitboard InBetween(Square from, Square to)

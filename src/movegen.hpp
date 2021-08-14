@@ -122,7 +122,7 @@ namespace anka {
 		template <int side>
 		void GeneratePawnPushMoves(const GameState& pos, Bitboard ally_pawns, Bitboard legal_squares)
 		{
-			constexpr int push_dir = direction::N - (side << 4); // south if black
+			constexpr int push_dir = NORTH - (side << 4); // south if black
 			u64 dpush_rank_mask;
 			u64 prom_rank_mask;
 			if constexpr (side == side::WHITE) {
@@ -238,8 +238,8 @@ namespace anka {
 		template <int side>
 		void GeneratePawnCaptures(const GameState& pos, Bitboard ally_pawns, Bitboard opp_pieces, Bitboard capturable_squares)
 		{
-			constexpr int pawn_east_dir = direction::NE - (side << 4); // South east if black
-			constexpr int pawn_west_dir = direction::NW - (side << 4); // South west if black
+			constexpr int pawn_east_dir = NORTHEAST - (side << 4); // South east if black
+			constexpr int pawn_west_dir = NORTHWEST - (side << 4); // South west if black
 			u64 prom_rank_mask;
 			if constexpr (side == side::WHITE) {
 				prom_rank_mask = C64(0xFF00000000000000); // rank 8
@@ -631,7 +631,7 @@ namespace anka {
 		Square ep_square = pos.EnPassantSquare();
 		if (ep_square != square::NOSQUARE) {
 			constexpr Rank ep_rank = rank::FIVE - side; //
-			constexpr int ep_capture_target_dir = direction::S + (side << 4); // south if white, north if black
+			constexpr int ep_capture_target_dir = SOUTH + (side << 4); // south if white, north if black
 			Square ep_capture_target = ep_square + ep_capture_target_dir;
 
 			bool ep_is_possible = bitboard::BitIsSet(pushable_squares, ep_square) || bitboard::BitIsSet(capturable_squares, ep_capture_target);
@@ -847,7 +847,7 @@ namespace anka {
 		Square ep_square = pos.EnPassantSquare();
 		if (ep_square != square::NOSQUARE) {
 			constexpr Rank ep_rank = rank::FIVE - side; //
-			constexpr int ep_capture_target_dir = direction::S + (side << 4); // south if white, north if black
+			constexpr int ep_capture_target_dir = SOUTH + (side << 4); // south if white, north if black
 			Square ep_capture_target = ep_square + ep_capture_target_dir;
 
 			bool ep_is_possible = bitboard::BitIsSet(pushable_squares, ep_square) || bitboard::BitIsSet(capturable_squares, ep_capture_target);
