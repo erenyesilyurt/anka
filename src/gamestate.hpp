@@ -62,6 +62,8 @@ namespace anka {
 			}
 		}
 
+		force_inline Bitboard AllyPieces() const { return m_piecesBB[m_side]; }
+		force_inline Bitboard OpponentPieces() const { return m_piecesBB[m_side^1]; }
 		force_inline Bitboard WhitePieces() const { return m_piecesBB[side::WHITE]; }
 		force_inline Bitboard BlackPieces() const { return m_piecesBB[side::BLACK]; }
 		force_inline Bitboard Pawns() const { return m_piecesBB[piece_type::PAWN]; }

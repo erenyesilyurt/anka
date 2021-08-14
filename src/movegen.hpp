@@ -28,14 +28,7 @@ namespace anka {
 	public:
 		GradedMove moves[n];
 		int length = 0;
-
-		// generates legal moves. returns true if in check
-		// if quiescence is true, only generates check evasions and captures
-		bool GenerateLegalMoves(const GameState& pos, bool quiescence = false);
-
-		void GenerateLegalCaptures(const GameState& pos);
 		
-
 		// removes the highest ranked move from the list and returns it
 		// CHECK IF LIST IS EMPTY BEFORE CALLING
 		Move PopBest()
@@ -82,15 +75,13 @@ namespace anka {
 			}
 		}
 
-	private:
-		void GenerateNonPawnMoves(const GameState& pos,
-			Bitboard ally_pieces, Bitboard opp_pieces,
-			Bitboard occ, Bitboard free_mask,
-			Bitboard capturables, Bitboard pushables);
-
+		// generates legal moves. returns true if in check
+		// if quiescence is true, only generates check evasions and captures
+		bool GenerateLegalMoves(const GameState& pos, bool quiescence = false);
+		void GenerateLegalCaptures(const GameState& pos);
 
 		template <int side, int piece>
-		void GeneratePieceMoves(const GameState &pos, Bitboard ally_pieces,
+		void GeneratePieceMoves(const GameState& pos, Bitboard ally_pieces,
 			Bitboard opp_pieces, Bitboard free_to_move,
 			Bitboard pushables, Bitboard capturables)
 		{
@@ -125,70 +116,6 @@ namespace anka {
 					push_targets &= push_targets - 1;
 				}
 				ally_pieces &= ally_pieces - 1;
-			}
-		}
-
-		template <int side>
-		void GenerateCastleMoves(const GameState &pos)
-		{
-			Bitboard occ = pos.Occupancy();
-			Bitboard castle_k_empty_mask = (C64(1) << square::F1) | (C64(1) << square::G1);
-			//Bitboard castle_k_noattack_mask = (C64(1) << square::E1) | (C64(1) << square::F1) | (C64(1) << square::G1);
-			Bitboard castle_q_empty_mask = (C64(1) << square::B1) | (C64(1) << square::C1) | (C64(1) << square::D1);
-			//Bitboard castle_q_noattack_mask = (C64(1) << square::C1) | (C64(1) << square::D1) | (C64(1) << square::E1);
-			Bitboard castle_k = CastlePermFlags_t::castle_wk;
-			Bitboard castle_q = CastlePermFlags_t::castle_wq;
-			if constexpr (side == side::BLACK) {
-				castle_k_empty_mask = (C64(1) << square::F8) | (C64(1) << square::G8);
-				//castle_k_noattack_mask = (C64(1) << square::E8) | (C64(1) << square::F8) | (C64(1) << square::G8);
-				castle_q_empty_mask = (C64(1) << square::B8) | (C64(1) << square::C8) | (C64(1) << square::D8);
-				//castle_q_noattack_mask = (C64(1) << square::C8) | (C64(1) << square::D8) | (C64(1) << square::E8);
-				castle_k = CastlePermFlags_t::castle_bk;
-				castle_q = CastlePermFlags_t::castle_bq;
-			}
-
-			// king side castle
-			if (pos.CastlingRights() & castle_k) {
-				if ((castle_k_empty_mask & occ) == 0) {
-					if constexpr (side == side::WHITE) {
-						if (!pos.IsAttacked<side::BLACK>(square::E1)
-							&& !pos.IsAttacked<side::BLACK>(square::F1)
-							&& !pos.IsAttacked<side::BLACK>(square::G1))
-						{
-							AddCastle(square::E1, square::G1);
-						}
-					}
-					else { // black
-						if (!pos.IsAttacked<side::WHITE>(square::E8)
-							&& !pos.IsAttacked<side::WHITE>(square::F8)
-							&& !pos.IsAttacked<side::WHITE>(square::G8))
-						{
-							AddCastle(square::E8, square::G8);
-						}
-					}
-				}
-			}
-
-			// queen side castle
-			if (pos.CastlingRights() & castle_q) {
-				if ((castle_q_empty_mask & occ) == 0) {
-					if constexpr (side == side::WHITE) {
-						if (!pos.IsAttacked<side::BLACK>(square::E1)
-							&& !pos.IsAttacked<side::BLACK>(square::D1)
-							&& !pos.IsAttacked<side::BLACK>(square::C1))
-						{
-							AddCastle(square::E1, square::C1);
-						}
-					}
-					else { // black
-						if (!pos.IsAttacked<side::WHITE>(square::E8)
-							&& !pos.IsAttacked<side::WHITE>(square::D8)
-							&& !pos.IsAttacked<side::WHITE>(square::C8))
-						{
-							AddCastle(square::E8, square::C8);
-						}
-					}
-				}
 			}
 		}
 
@@ -241,6 +168,72 @@ namespace anka {
 				promotion_targets &= promotion_targets - 1;
 			}
 		}
+
+	private:
+		void GenerateNonPawnMoves(const GameState& pos,
+			Bitboard ally_pieces, Bitboard opp_pieces,
+			Bitboard occ, Bitboard free_mask,
+			Bitboard capturables, Bitboard pushables);
+
+		template <int side>
+		void GenerateCastleMoves(const GameState &pos)
+		{
+			Bitboard occ = pos.Occupancy();
+			Bitboard castle_k_empty_mask = (C64(1) << square::F1) | (C64(1) << square::G1);
+			Bitboard castle_q_empty_mask = (C64(1) << square::B1) | (C64(1) << square::C1) | (C64(1) << square::D1);
+			Bitboard castle_k = CastlePermFlags_t::castle_wk;
+			Bitboard castle_q = CastlePermFlags_t::castle_wq;
+			if constexpr (side == side::BLACK) {
+				castle_k_empty_mask = (C64(1) << square::F8) | (C64(1) << square::G8);
+				castle_q_empty_mask = (C64(1) << square::B8) | (C64(1) << square::C8) | (C64(1) << square::D8);
+				castle_k = CastlePermFlags_t::castle_bk;
+				castle_q = CastlePermFlags_t::castle_bq;
+			}
+
+			// king side castle
+			if (pos.CastlingRights() & castle_k) {
+				if ((castle_k_empty_mask & occ) == 0) {
+					if constexpr (side == side::WHITE) {
+						if (!pos.IsAttacked<side::BLACK>(square::E1)
+							&& !pos.IsAttacked<side::BLACK>(square::F1)
+							&& !pos.IsAttacked<side::BLACK>(square::G1))
+						{
+							AddCastle(square::E1, square::G1);
+						}
+					}
+					else { // black
+						if (!pos.IsAttacked<side::WHITE>(square::E8)
+							&& !pos.IsAttacked<side::WHITE>(square::F8)
+							&& !pos.IsAttacked<side::WHITE>(square::G8))
+						{
+							AddCastle(square::E8, square::G8);
+						}
+					}
+				}
+			}
+
+			// queen side castle
+			if (pos.CastlingRights() & castle_q) {
+				if ((castle_q_empty_mask & occ) == 0) {
+					if constexpr (side == side::WHITE) {
+						if (!pos.IsAttacked<side::BLACK>(square::E1)
+							&& !pos.IsAttacked<side::BLACK>(square::D1)
+							&& !pos.IsAttacked<side::BLACK>(square::C1))
+						{
+							AddCastle(square::E1, square::C1);
+						}
+					}
+					else { // black
+						if (!pos.IsAttacked<side::WHITE>(square::E8)
+							&& !pos.IsAttacked<side::WHITE>(square::D8)
+							&& !pos.IsAttacked<side::WHITE>(square::C8))
+						{
+							AddCastle(square::E8, square::C8);
+						}
+					}
+				}
+			}
+		}	
 
 		template <int side>
 		void GeneratePawnCaptures(const GameState& pos, Bitboard ally_pawns, Bitboard opp_pieces, Bitboard capturable_squares)
@@ -571,7 +564,7 @@ namespace anka {
 		Bitboard capturable_squares = UINT64_MAX;
 		Bitboard pushable_squares = C64(0);
 
-		// thanks to https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
+
 		if (num_checkers == 1) { // single check
 			// capturing checker
 			capturable_squares = checkers;
@@ -721,7 +714,7 @@ namespace anka {
 				king_targets &= king_targets - 1;
 
 				// check if target square is under attack
-				// BUG: slider attacks need to xray through king
+				// slider attacks need to xray through king
 				if (attacks::KnightAttacks(sq) & opp_knights)
 					continue;
 				else if (attacks::BishopAttacks(sq, occ ^ ally_king) & opp_bishops_and_queens)

@@ -3,6 +3,7 @@
 #include "rng.hpp"
 #include "attacks.hpp"
 #include "movegen.hpp"
+#include "evaluation.hpp"
 #include <thread>
 
 static void Init()
@@ -14,6 +15,7 @@ static void Init()
 	anka::RNG rng(RNG_SEED);
 	anka::InitZobristKeys(rng);
 	anka::attacks::InitAttacks();
+	anka::InitPST();
 }
 
 int main()
