@@ -197,7 +197,7 @@ namespace anka {
 				if (!square::IsOffBoard120(target_2)) {
 					bitboard::SetBit(attack_map, square::Square120To64(target_2));
 				}
-				_pawn_attacks[side::WHITE][sq] = attack_map;
+				_pawn_attacks[WHITE][sq] = attack_map;
 			}
 
 			for (int sq = 0; sq < 64; sq++) {
@@ -214,7 +214,7 @@ namespace anka {
 				if (!square::IsOffBoard120(target_2)) {
 					bitboard::SetBit(attack_map, square::Square120To64(target_2));
 				}
-				_pawn_attacks[side::BLACK][sq] = attack_map;
+				_pawn_attacks[BLACK][sq] = attack_map;
 			}
 		}
 
@@ -225,8 +225,8 @@ namespace anka {
 				bitboard::SetBit(b, sq);
 				b |= bitboard::StepOne<WEST>(b);
 				b |= bitboard::StepOne<EAST>(b);
-				_pawn_front_spans[side::WHITE][sq] = Fill<NORTH>(bitboard::StepOne<NORTH>(b));
-				_pawn_front_spans[side::BLACK][sq] = Fill<SOUTH>(bitboard::StepOne<SOUTH>(b));
+				_pawn_front_spans[WHITE][sq] = Fill<NORTH>(bitboard::StepOne<NORTH>(b));
+				_pawn_front_spans[BLACK][sq] = Fill<SOUTH>(bitboard::StepOne<SOUTH>(b));
 			}
 		}
 

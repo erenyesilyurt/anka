@@ -45,7 +45,7 @@ namespace anka {
     {
         long long available_time = 0;
         long long increment = 0;
-        if (pos.SideToPlay() == side::WHITE) {
+        if (pos.SideToPlay() == WHITE) {
             available_time = params.wtime;
             increment = params.winc;
         }

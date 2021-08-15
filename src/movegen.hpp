@@ -125,7 +125,7 @@ namespace anka {
 			constexpr int push_dir = NORTH - (side << 4); // south if black
 			u64 dpush_rank_mask;
 			u64 prom_rank_mask;
-			if constexpr (side == side::WHITE) {
+			if constexpr (side == WHITE) {
 				dpush_rank_mask = C64(0xFF000000); // rank 4
 				prom_rank_mask = C64(0xFF00000000000000); // rank 8
 			}
@@ -183,7 +183,7 @@ namespace anka {
 			Bitboard castle_q_empty_mask = (C64(1) << square::B1) | (C64(1) << square::C1) | (C64(1) << square::D1);
 			Bitboard castle_k = CastlePermFlags_t::castle_wk;
 			Bitboard castle_q = CastlePermFlags_t::castle_wq;
-			if constexpr (side == side::BLACK) {
+			if constexpr (side == BLACK) {
 				castle_k_empty_mask = (C64(1) << square::F8) | (C64(1) << square::G8);
 				castle_q_empty_mask = (C64(1) << square::B8) | (C64(1) << square::C8) | (C64(1) << square::D8);
 				castle_k = CastlePermFlags_t::castle_bk;
@@ -193,18 +193,18 @@ namespace anka {
 			// king side castle
 			if (pos.CastlingRights() & castle_k) {
 				if ((castle_k_empty_mask & occ) == 0) {
-					if constexpr (side == side::WHITE) {
-						if (!pos.IsAttacked<side::BLACK>(square::E1)
-							&& !pos.IsAttacked<side::BLACK>(square::F1)
-							&& !pos.IsAttacked<side::BLACK>(square::G1))
+					if constexpr (side == WHITE) {
+						if (!pos.IsAttacked<BLACK>(square::E1)
+							&& !pos.IsAttacked<BLACK>(square::F1)
+							&& !pos.IsAttacked<BLACK>(square::G1))
 						{
 							AddCastle(square::E1, square::G1);
 						}
 					}
 					else { // black
-						if (!pos.IsAttacked<side::WHITE>(square::E8)
-							&& !pos.IsAttacked<side::WHITE>(square::F8)
-							&& !pos.IsAttacked<side::WHITE>(square::G8))
+						if (!pos.IsAttacked<WHITE>(square::E8)
+							&& !pos.IsAttacked<WHITE>(square::F8)
+							&& !pos.IsAttacked<WHITE>(square::G8))
 						{
 							AddCastle(square::E8, square::G8);
 						}
@@ -215,18 +215,18 @@ namespace anka {
 			// queen side castle
 			if (pos.CastlingRights() & castle_q) {
 				if ((castle_q_empty_mask & occ) == 0) {
-					if constexpr (side == side::WHITE) {
-						if (!pos.IsAttacked<side::BLACK>(square::E1)
-							&& !pos.IsAttacked<side::BLACK>(square::D1)
-							&& !pos.IsAttacked<side::BLACK>(square::C1))
+					if constexpr (side == WHITE) {
+						if (!pos.IsAttacked<BLACK>(square::E1)
+							&& !pos.IsAttacked<BLACK>(square::D1)
+							&& !pos.IsAttacked<BLACK>(square::C1))
 						{
 							AddCastle(square::E1, square::C1);
 						}
 					}
 					else { // black
-						if (!pos.IsAttacked<side::WHITE>(square::E8)
-							&& !pos.IsAttacked<side::WHITE>(square::D8)
-							&& !pos.IsAttacked<side::WHITE>(square::C8))
+						if (!pos.IsAttacked<WHITE>(square::E8)
+							&& !pos.IsAttacked<WHITE>(square::D8)
+							&& !pos.IsAttacked<WHITE>(square::C8))
 						{
 							AddCastle(square::E8, square::C8);
 						}
@@ -241,7 +241,7 @@ namespace anka {
 			constexpr int pawn_east_dir = NORTHEAST - (side << 4); // South east if black
 			constexpr int pawn_west_dir = NORTHWEST - (side << 4); // South west if black
 			u64 prom_rank_mask;
-			if constexpr (side == side::WHITE) {
+			if constexpr (side == WHITE) {
 				prom_rank_mask = C64(0xFF00000000000000); // rank 8
 			}
 			else {
@@ -469,11 +469,11 @@ namespace anka {
 	{
 		length = 0;
 
-		if (pos.SideToPlay() == side::WHITE) {
-			return GenerateMoves<side::WHITE>(pos, quiescence);
+		if (pos.SideToPlay() == WHITE) {
+			return GenerateMoves<WHITE>(pos, quiescence);
 		}
-		else if (pos.SideToPlay() == side::BLACK) {
-			return GenerateMoves<side::BLACK>(pos, quiescence);
+		else if (pos.SideToPlay() == BLACK) {
+			return GenerateMoves<BLACK>(pos, quiescence);
 		}
 		else
 			return false;
@@ -485,11 +485,11 @@ namespace anka {
 	{
 		length = 0;
 
-		if (pos.SideToPlay() == side::WHITE) {
-			GenerateCaptures<side::WHITE>(pos);
+		if (pos.SideToPlay() == WHITE) {
+			GenerateCaptures<WHITE>(pos);
 		}
-		else if (pos.SideToPlay() == side::BLACK) {
-			GenerateCaptures<side::BLACK>(pos);
+		else if (pos.SideToPlay() == BLACK) {
+			GenerateCaptures<BLACK>(pos);
 		}
 	}
 
@@ -500,7 +500,7 @@ namespace anka {
 	inline void MoveList<n>::GenerateCaptures(const GameState& pos)
 	{
 		using namespace piece_type;
-		static_assert(side == side::WHITE || side == side::BLACK, "Side must be white or black when generating moves.");
+		static_assert(side == WHITE || side == BLACK, "Side must be white or black when generating moves.");
 
 		constexpr int ally_side(side);
 		constexpr int opponent_side(side ^ 1);
@@ -671,7 +671,7 @@ namespace anka {
 	inline bool MoveList<n>::GenerateMoves(const GameState& pos, bool quiescence)
 	{
 		using namespace piece_type;
-		static_assert(side == side::WHITE || side == side::BLACK, "Side must be white or black when generating moves.");
+		static_assert(side == WHITE || side == BLACK, "Side must be white or black when generating moves.");
 
 		constexpr int ally_side(side);
 		constexpr int opponent_side(side ^ 1);

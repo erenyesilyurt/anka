@@ -21,7 +21,7 @@ namespace anka {
 		}
 
 		// validate mailbox and bitboards
-		if ((Pieces<side::WHITE>() & Pieces<side::BLACK>()) != C64(0)) {
+		if ((Pieces<WHITE>() & Pieces<BLACK>()) != C64(0)) {
 			std::cerr << "AnkaError (Validate): AllyPieces and OpponentPieces share elements.\n";
 			valid = false;
 		}
@@ -30,10 +30,10 @@ namespace anka {
 		for (Square sq = 0; sq < 64; sq++) {
 			auto piece_type = m_board[sq];
 			if (bitboard::BitIsSet(WhitePieces(), sq)) {
-				materials[side::WHITE] += MATERIAL_VALUES[piece_type];
+				materials[WHITE] += MATERIAL_VALUES[piece_type];
 			}
 			else if (bitboard::BitIsSet(BlackPieces(), sq)) {
-				materials[side::BLACK] += MATERIAL_VALUES[piece_type];
+				materials[BLACK] += MATERIAL_VALUES[piece_type];
 			}
 
 			switch (piece_type)
@@ -45,37 +45,37 @@ namespace anka {
 				}
 				break;
 			case piece_type::PAWN:
-				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::PAWN>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<ALLSIDES, piece_type::PAWN>(), sq)) {
 					std::cerr << "AnkaError (Validate): Pawns BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::KNIGHT:
-				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::KNIGHT>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<ALLSIDES, piece_type::KNIGHT>(), sq)) {
 					std::cerr << "AnkaError (Validate): Knights BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::BISHOP:
-				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::BISHOP>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<ALLSIDES, piece_type::BISHOP>(), sq)) {
 					std::cerr << "AnkaError (Validate): Bishops BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::ROOK:
-				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::ROOK>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<ALLSIDES, piece_type::ROOK>(), sq)) {
 					std::cerr << "AnkaError (Validate): Rooks BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::QUEEN:
-				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::QUEEN>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<ALLSIDES, piece_type::QUEEN>(), sq)) {
 					std::cerr << "AnkaError (Validate): Queens BB/mailbox mismatch at square " << square::ToString(sq) << "\n";
 					valid = false;
 				}
 				break;
 			case piece_type::KING:
-				if (!bitboard::BitIsSet(Pieces<side::ALL, piece_type::KING>(), sq)) {
+				if (!bitboard::BitIsSet(Pieces<ALLSIDES, piece_type::KING>(), sq)) {
 					std::cerr << "AnkaError (Validate): Kings BB/mailbox mismatch at square " << sq << "\n";
 					valid = false;
 				}
@@ -87,14 +87,14 @@ namespace anka {
 			}
 		}
 
-		if (materials[side::WHITE] != m_materials[side::WHITE]) {
-			fprintf(stderr, "AnkaError (Validate): Material score mismatch for WHITE. (Pos: %d Calculated: %d)\n", m_materials[side::WHITE], materials[side::WHITE]);
+		if (materials[WHITE] != m_materials[WHITE]) {
+			fprintf(stderr, "AnkaError (Validate): Material score mismatch for WHITE. (Pos: %d Calculated: %d)\n", m_materials[WHITE], materials[WHITE]);
 			valid = false;
 			Print();
 		}
 		
-		if (materials[side::BLACK] != m_materials[side::BLACK]) {
-			fprintf(stderr, "AnkaError (Validate): Material score mismatch for BLACK. (Pos: %d Calculated: %d)\n", m_materials[side::BLACK], materials[side::BLACK]);
+		if (materials[BLACK] != m_materials[BLACK]) {
+			fprintf(stderr, "AnkaError (Validate): Material score mismatch for BLACK. (Pos: %d Calculated: %d)\n", m_materials[BLACK], materials[BLACK]);
 			valid = false;
 			Print();
 		}

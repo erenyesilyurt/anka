@@ -129,7 +129,7 @@ namespace anka {
 		m_side = opposite_side;
 		m_ply++;
 
-		m_occupation = m_piecesBB[side::WHITE] | m_piecesBB[side::BLACK];
+		m_occupation = m_piecesBB[WHITE] | m_piecesBB[BLACK];
 		// add hashes
 		UpdateKeyWithCastle();
 		UpdateKeyWithSide();
@@ -244,7 +244,7 @@ namespace anka {
 
 		}
 
-		m_occupation = m_piecesBB[side::WHITE] | m_piecesBB[side::BLACK];
+		m_occupation = m_piecesBB[WHITE] | m_piecesBB[BLACK];
 		ANKA_ASSERT(Validate());
 	}
 

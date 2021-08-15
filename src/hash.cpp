@@ -49,7 +49,7 @@ namespace anka {
 		}
 
 		Square ep_square = m_ep_target;
-		if (m_side == side::BLACK) {
+		if (m_side == BLACK) {
 			key ^= zobrist_keys::side_key;
 		}
 

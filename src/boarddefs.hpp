@@ -11,14 +11,19 @@ namespace anka {
 	typedef int File;
 	typedef int Square;
 	typedef int PieceType;
-	typedef int Side;
 	typedef int Square;
+	typedef int Side;
+	// Side
+	enum { WHITE = 0, BLACK = 1, NUM_SIDES = 2, NOSIDE = 2, ALLSIDES = 2 };
 
-	// Directions
 	enum Direction { EAST = 1, WEST = -1, NORTH = 8, NORTHEAST = 9, NORTHWEST = 7, SOUTH = -8, SOUTHEAST = -7, SOUTHWEST = -9 };
-	
-	// Game phase
-	enum Phase {MIDGAME, ENDGAME};
+	enum Phase {MIDGAME, ENDGAME, NUM_PHASES};
+
+
+	force_inline const char* SideToString(Side s)
+	{
+		return lut::LUT_SIDE_STR[s];
+	}
 
 	namespace rank {
 		force_inline const char* ToString(Rank r)
@@ -73,15 +78,6 @@ namespace anka {
 		}
 	};
 
-	namespace side {
-
-		enum { WHITE = 0, BLACK = 1, ALL = 2, NONE = 2 };
-
-		force_inline const char* ToString(Side s)
-		{
-			return lut::LUT_SIDE_STR[s];
-		}
-	};
 
 	namespace square {
 		// Least endian mapping, A1 = 0, B1 = 1, ... H8 = 63

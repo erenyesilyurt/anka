@@ -23,7 +23,7 @@ namespace anka {
 	class GameState {
 	public:
 		GameState() : m_piecesBB{}, m_occupation{}, m_board{}, m_ep_target{ square::NOSQUARE },
-			m_side{ side::WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
+			m_side{ WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
 			m_zobrist_key{}, m_ply{}, m_state_history{}, m_materials{0}
 		{
 			m_state_history = new PositionRecord[kStateHistoryMaxSize];
@@ -39,24 +39,24 @@ namespace anka {
 		template <int side, int piece_type = piece_type::ALL>
 		force_inline Bitboard Pieces() const
 		{
-			static_assert(side >= side::WHITE && side <= side::ALL);
+			static_assert(side >= WHITE && side <= ALLSIDES);
 			static_assert(piece_type >= piece_type::PAWN && piece_type <= piece_type::ALL);
 
-			if constexpr (side == side::WHITE) {
+			if constexpr (side == WHITE) {
 				if constexpr (piece_type == piece_type::ALL)
-					return m_piecesBB[side::WHITE];
+					return m_piecesBB[WHITE];
 				else
-					return m_piecesBB[piece_type] & m_piecesBB[side::WHITE];
+					return m_piecesBB[piece_type] & m_piecesBB[WHITE];
 			}
-			else if (side == side::BLACK) {
+			else if (side == BLACK) {
 				if constexpr (piece_type == piece_type::ALL)
-					return m_piecesBB[side::BLACK];
+					return m_piecesBB[BLACK];
 				else
-					return m_piecesBB[piece_type] & m_piecesBB[side::BLACK];
+					return m_piecesBB[piece_type] & m_piecesBB[BLACK];
 			}
-			else { // side::ALL
+			else { // ALL
 				if constexpr (piece_type == piece_type::ALL)
-					return m_piecesBB[side::WHITE] & m_piecesBB[side::BLACK];
+					return m_piecesBB[WHITE] & m_piecesBB[BLACK];
 				else
 					return m_piecesBB[piece_type];
 			}
@@ -64,8 +64,8 @@ namespace anka {
 
 		force_inline Bitboard AllyPieces() const { return m_piecesBB[m_side]; }
 		force_inline Bitboard OpponentPieces() const { return m_piecesBB[m_side^1]; }
-		force_inline Bitboard WhitePieces() const { return m_piecesBB[side::WHITE]; }
-		force_inline Bitboard BlackPieces() const { return m_piecesBB[side::BLACK]; }
+		force_inline Bitboard WhitePieces() const { return m_piecesBB[WHITE]; }
+		force_inline Bitboard BlackPieces() const { return m_piecesBB[BLACK]; }
 		force_inline Bitboard Pawns() const { return m_piecesBB[piece_type::PAWN]; }
 		force_inline Bitboard Knights() const { return m_piecesBB[piece_type::KNIGHT]; }
 		force_inline Bitboard Bishops() const { return m_piecesBB[piece_type::BISHOP]; }
@@ -173,14 +173,14 @@ namespace anka {
 		force_inline u64 PositionKey() const { return m_zobrist_key; }
 		force_inline int Ply() const { return m_ply; }
 		force_inline void SetPly(int ply) { m_ply = ply; }
-		force_inline int Material(Side color) const { ANKA_ASSERT(color <= side::BLACK); return m_materials[color]; }
-		force_inline int TotalMaterial() const { return m_materials[side::WHITE] + m_materials[side::BLACK]; }
+		force_inline int Material(Side color) const { ANKA_ASSERT(color <= BLACK); return m_materials[color]; }
+		force_inline int TotalMaterial() const { return m_materials[WHITE] + m_materials[BLACK]; }
 
 		u64 CalculateKey();
 
 		force_inline void UpdateKeyWithPiece(PieceType piece_type, Side piece_color, Square sq)
 		{
-			ANKA_ASSERT(piece_color == side::WHITE || piece_color == side::BLACK);
+			ANKA_ASSERT(piece_color == WHITE || piece_color == BLACK);
 			ANKA_ASSERT(sq >=0 && sq < 64);
 			ANKA_ASSERT(piece_type >= piece_type::PAWN  && piece_type <= piece_type::KING);
 			m_zobrist_key ^= zobrist_keys::piece_keys[piece_color][piece_type - 2][sq];

@@ -22,11 +22,11 @@ void anka::GameState::Clear()
 	m_ep_target = square::NOSQUARE;
 	m_castling_rights = 0;
 	m_halfmove_clock = 0;
-	m_side = side::NONE;
+	m_side = NOSIDE;
 	m_zobrist_key = C64(0);
 	m_ply = 0;
-	m_materials[side::WHITE] = 0;
-	m_materials[side::BLACK] = 0;
+	m_materials[WHITE] = 0;
+	m_materials[BLACK] = 0;
 }
 
 bool anka::GameState::LoadPosition(std::string fen)
@@ -58,10 +58,10 @@ bool anka::GameState::LoadPosition(std::string fen)
 
 	// Side to move
 	if (fen_parts[1] == "w") {
-		m_side = side::WHITE;
+		m_side = WHITE;
 	}
 	else if (fen_parts[1] == "b") {
-		m_side = side::BLACK;
+		m_side = BLACK;
 	}
 	else {
 		std::cerr << "AnkaError (LoadPosition): Failed to parse side to move\n";
@@ -149,12 +149,12 @@ bool anka::GameState::LoadPosition(std::string fen)
 
 
 			if (isupper(c)) {
-				bitboard::SetBit(m_piecesBB[side::WHITE], sq);
-				m_materials[side::WHITE] += MATERIAL_VALUES[piece];
+				bitboard::SetBit(m_piecesBB[WHITE], sq);
+				m_materials[WHITE] += MATERIAL_VALUES[piece];
 			}
 			else if (islower(c)) {
-				bitboard::SetBit(m_piecesBB[side::BLACK], sq);
-				m_materials[side::BLACK] += MATERIAL_VALUES[piece];
+				bitboard::SetBit(m_piecesBB[BLACK], sq);
+				m_materials[BLACK] += MATERIAL_VALUES[piece];
 			}
 			else {
 				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";
@@ -163,7 +163,7 @@ bool anka::GameState::LoadPosition(std::string fen)
 		}
 	}
 
-	m_occupation = m_piecesBB[side::WHITE] | m_piecesBB[side::BLACK];
+	m_occupation = m_piecesBB[WHITE] | m_piecesBB[BLACK];
 	m_zobrist_key = CalculateKey();
 
 	ANKA_ASSERT(Validate());
@@ -246,7 +246,7 @@ void anka::GameState::Print() const
 	}
 	constexpr char piece_chars[] = { 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-	Bitboard white_pieces = Pieces<side::WHITE, piece_type::ALL>();
+	Bitboard white_pieces = Pieces<WHITE, piece_type::ALL>();
 	for (int i = 2; i < 8; i++) {
 		Bitboard pieces = m_piecesBB[i];
 		char piece_char = piece_chars[i - 2];
@@ -274,7 +274,7 @@ void anka::GameState::Print() const
 		}
 		putchar('\t');
 		if (r == rank::EIGHT) {
-			printf("Side to move: %s\n", side::ToString(SideToPlay()));
+			printf("Side to move: %s\n", SideToString(SideToPlay()));
 		}
 		else if (r == rank::SEVEN) {
 			printf("Half-Move Clock: %d\n", HalfMoveClock());
@@ -299,34 +299,34 @@ void anka::GameState::Print() const
 void anka::GameState::PrintBitboards() const
 {
 	printf("***White pieces***\n");
-	bitboard::Print(Pieces<side::WHITE>());
+	bitboard::Print(Pieces<WHITE>());
 	putchar('\n');
 
 	printf("***Black pieces***\n");
-	bitboard::Print(Pieces<side::BLACK>());
+	bitboard::Print(Pieces<BLACK>());
 	putchar('\n');
 
 	printf("***Pawns***\n");
-	bitboard::Print(Pieces<side::ALL, piece_type::PAWN>());
+	bitboard::Print(Pieces<ALLSIDES, piece_type::PAWN>());
 	putchar('\n');
 
 	printf("***Knights***\n");
-	bitboard::Print(Pieces<side::ALL, piece_type::KNIGHT>());
+	bitboard::Print(Pieces<ALLSIDES, piece_type::KNIGHT>());
 	putchar('\n');
 
 	printf("***Bishops***\n");
-	bitboard::Print(Pieces<side::ALL, piece_type::BISHOP>());
+	bitboard::Print(Pieces<ALLSIDES, piece_type::BISHOP>());
 	putchar('\n');
 
 	printf("***Rooks***\n");
-	bitboard::Print(Pieces<side::ALL, piece_type::ROOK>());
+	bitboard::Print(Pieces<ALLSIDES, piece_type::ROOK>());
 	putchar('\n');
 
 	printf("***Queens***\n");
-	bitboard::Print(Pieces<side::ALL, piece_type::QUEEN>());
+	bitboard::Print(Pieces<ALLSIDES, piece_type::QUEEN>());
 	putchar('\n');
 
 	printf("***Kings***\n");
-	bitboard::Print(Pieces<side::ALL, piece_type::KING>());
+	bitboard::Print(Pieces<ALLSIDES, piece_type::KING>());
 	putchar('\n');
 }
