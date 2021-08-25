@@ -11,11 +11,11 @@ static void Init()
 	// unbuffered output
 	setbuf(stdout, NULL);
 
-	constexpr u64 RNG_SEED = 719;
+	constexpr u64 RNG_SEED = 6700417;
 	anka::RNG rng(RNG_SEED);
 	anka::InitZobristKeys(rng);
 	anka::attacks::InitAttacks();
-	anka::InitPST();
+	anka::eval_params.InitPST();
 }
 
 int main()

@@ -59,8 +59,6 @@ namespace anka {
 			// add promoted piece
 			m_piecesBB[promoted_piece] ^= to_bb;
 			m_board[to] = promoted_piece;
-			m_materials[m_side] += MATERIAL_VALUES[promoted_piece];
-			m_materials[m_side] -= MATERIAL_VALUES[piece_type::PAWN];
 			// add promoted_piece hash
 			UpdateKeyWithPiece(promoted_piece, m_side, to);
 		}
@@ -80,7 +78,6 @@ namespace anka {
 				m_piecesBB[opposite_side] ^= cap_piece_bb;
 				m_piecesBB[piece_type::PAWN] ^= cap_piece_bb;
 				m_board[cap_piece_sq] = piece_type::NOPIECE;
-				m_materials[opposite_side] -= MATERIAL_VALUES[piece_type::PAWN];
 				// remove captured pawn hash
 				UpdateKeyWithPiece(piece_type::PAWN, opposite_side, cap_piece_sq);
 			}
@@ -88,7 +85,6 @@ namespace anka {
 				PieceType captured_piece = move::CapturedPiece(move);
 				m_piecesBB[opposite_side] ^= to_bb;
 				m_piecesBB[captured_piece] ^= to_bb;
-				m_materials[opposite_side] -= MATERIAL_VALUES[captured_piece];
 				// remove captured piece hash
 				UpdateKeyWithPiece(captured_piece, opposite_side, to);
 			}
@@ -185,8 +181,6 @@ namespace anka {
 
 			m_piecesBB[moving_piece] ^= from_bb;
 			m_piecesBB[promoted_piece] ^= to_bb;
-			m_materials[m_side] += MATERIAL_VALUES[piece_type::PAWN];
-			m_materials[m_side] -= MATERIAL_VALUES[promoted_piece];
 
 			// remove promoted_piece hash on to square
 			UpdateKeyWithPiece(promoted_piece, m_side, to);
@@ -206,7 +200,6 @@ namespace anka {
 				m_piecesBB[opposite_side] ^= cap_piece_bb;
 				m_piecesBB[piece_type::PAWN] ^= cap_piece_bb;
 				m_board[cap_piece_sq] = piece_type::PAWN;
-				m_materials[opposite_side] += MATERIAL_VALUES[piece_type::PAWN];
 				// restore captured pawn hash
 				UpdateKeyWithPiece(piece_type::PAWN, opposite_side, cap_piece_sq);
 			}
@@ -215,7 +208,6 @@ namespace anka {
 				m_piecesBB[opposite_side] ^= to_bb;
 				m_piecesBB[captured_piece] ^= to_bb;
 				m_board[to] = captured_piece;
-				m_materials[opposite_side] += MATERIAL_VALUES[captured_piece];
 				// remove captured piece hash
 				UpdateKeyWithPiece(captured_piece, opposite_side, to);
 			}

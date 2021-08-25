@@ -12,7 +12,8 @@ namespace anka {
 
     bool NullOk(GameState &pos)
     {
-        return pos.TotalMaterial() > 1200 ? true : false;
+        //return pos.TotalMaterial() > 1200 ? true : false;
+        return true;
     }
 
     // returns true if there are no illegal moves in pv
@@ -56,19 +57,19 @@ namespace anka {
 
         available_time -= EngineSettings::MOVE_OVERHEAD;
 
-        int total_material = pos.TotalMaterial();
 
         // guess the number of remaining moves
         if (params.movestogo <= 0) {
-            if (total_material < 1800) {
-                params.movestogo = (total_material >> 6) + 3;
-            }
-            else if (total_material < 6100) {
-                params.movestogo = (total_material >> 8) + 20;
-            }
-            else {
-                params.movestogo = (total_material >> 6) - 57;
-            }
+            params.movestogo = 30;
+            //if (total_material < 1800) {
+            //    params.movestogo = (total_material >> 6) + 3;
+            //}
+            //else if (total_material < 6100) {
+            //    params.movestogo = (total_material >> 8) + 20;
+            //}
+            //else {
+            //    params.movestogo = (total_material >> 6) - 57;
+            //}
         }
 
         // increment
@@ -230,7 +231,7 @@ namespace anka {
         else {
             move_list.GenerateLegalCaptures(pos);
             // stand pat
-            int eval = ClassicalEvaluation(pos);
+            int eval = pos.ClassicalEvaluation();
 
             if (eval > alpha) {
                 if (eval >= beta) {

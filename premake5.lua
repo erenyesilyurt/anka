@@ -22,12 +22,9 @@ workspace "AnkaEngine"
 		files
 		{
 			"src/**.cpp",
-			"src/**.hpp"
-		}
-		removefiles
-		{
-			"src/magic_generator/**.cpp",
-			"src/magic_generator/**.hpp"
+			"src/**.hpp",
+			"src/evaluation/**.cpp",
+			"src/evaluation/**.hpp"
 		}
 		
 		
@@ -37,7 +34,8 @@ workspace "AnkaEngine"
 		
 		includedirs
 		{
-			"src"
+			"src",
+			"src/evaluation"
 		}
 		
 		filter "configurations:Debug"

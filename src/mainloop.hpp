@@ -181,7 +181,7 @@ namespace anka {
 
 		inline void OnEval(GameState& pos)
 		{
-			int eval_score = ClassicalEvaluation(pos);
+			int eval_score = pos.ClassicalEvaluation();
 			printf("Static eval: %+.2f (%+d cp)\n", eval_score / 100.0f, eval_score);
 
 			#ifdef EVAL_DEBUG
@@ -192,16 +192,15 @@ namespace anka {
 					printf("\nENDGAME EVAL\n");
 				
 				printf("            WHITE \tBLACK\n");
-				printf("Material:    %d    \t%d\n", eval_info.material[phase][WHITE], eval_info.material[phase][BLACK]);
-				printf("Mobility:    %d    \t%d\n", eval_info.mobility[phase][WHITE], eval_info.mobility[phase][BLACK]);
-				printf("PST Bonus:   %d    \t%d\n", eval_info.pst[phase][WHITE], eval_info.pst[phase][BLACK]);
-				printf("Bshp pair:   %d    \t%d\n", eval_info.bishop_pair[phase][WHITE], eval_info.bishop_pair[phase][BLACK]);
-				printf("Pass pawns:  %d    \t%d\n", eval_info.passed[phase][WHITE], eval_info.passed[phase][BLACK]);
-				printf("Iso. pawns:  %d    \t%d\n", eval_info.isolated[phase][WHITE], eval_info.isolated[phase][BLACK]);
+				printf("Material:    %d    \t%d\n", eval_data.material[phase][WHITE], eval_data.material[phase][BLACK]);
+				printf("Mobility:    %d    \t%d\n", eval_data.mobility[phase][WHITE], eval_data.mobility[phase][BLACK]);
+				printf("PST Bonus:   %d    \t%d\n", eval_data.pst[phase][WHITE], eval_data.pst[phase][BLACK]);
+				printf("Bshp pair:   %d    \t%d\n", eval_data.bishop_pair[phase][WHITE], eval_data.bishop_pair[phase][BLACK]);
+				printf("Pwn struct:  %d    \t%d\n", eval_data.pawn_structure[phase][WHITE], eval_data.pawn_structure[phase][BLACK]);
 			}
 
-			printf("Tempo: W: %d B: %d\n", eval_info.tempo[WHITE], eval_info.tempo[BLACK]);
-			printf("Phase: %d\n", eval_info.phase);
+			printf("Tempo: W: %d B: %d\n", eval_data.tempo[WHITE], eval_data.tempo[BLACK]);
+			printf("Phase: %d\n", eval_data.phase);
 			#endif // EVAL_DEBUG
 
 		}

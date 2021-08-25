@@ -1,0 +1,100 @@
+[
+    {
+        "command": "Anka.exe",
+        "name": "anka_new",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+		"stderrFile": "ankanew_error.txt",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "Anka_old.exe",
+        "name": "anka_old",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "stockfish_14.exe",
+        "name": "sf",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "Loki3.5.0.exe",
+        "name": "loki",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "shallowblue.exe",
+        "name": "shallowblue",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "tscp181.exe",
+        "name": "tscp",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "xboard",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "CDrill_1800.exe",
+        "name": "cdrill_1800",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+        "workingDirectory": "./engines"
+    },
+    {
+        "command": "sayuri.exe",
+        "name": "sayuri",
+        "options": [
+            {
+                "name": "Hash",
+                "value": 256
+            }
+        ],
+        "protocol": "uci",
+        "workingDirectory": "./engines"
+    }
+]
+

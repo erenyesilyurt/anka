@@ -14,8 +14,8 @@ namespace anka {
 
         force_inline double rand()
         {
-            std::uniform_real_distribution<double> distribution(0.0, 1.0);
-            return distribution(*this);
+            // source: https://prng.di.unimi.it/
+            return (next() >> 11) * 0x1.0p-53;
         }
 
         force_inline double rand(double min, double max)
@@ -23,8 +23,7 @@ namespace anka {
             std::uniform_real_distribution<double> distribution(min, max);
             return distribution(*this);
         }
-
-        force_inline int32_t rand32() { return static_cast<int32_t>(next() >> 32); }
+       
         force_inline u64 rand64() { return next(); }
         force_inline u64 rand64_sparse() { return (next() & next() & next()); }
         force_inline u64 rand64(u64 min, u64 max)
@@ -43,7 +42,14 @@ namespace anka {
 
             return min + value;
         }
+        force_inline u32 rand32() { return static_cast<u32>(next() >> 32); }
 
+        force_inline int randint() { return static_cast<int>(next() >> 32); }
+        force_inline int randint(int min, int max) 
+        {
+            std::uniform_int_distribution<int> distribution(min, max);
+            return distribution(*this);
+        }
 
         // C++ UniformRandomBitGenerator interface methods
         force_inline static result_type min() { return C64(0); }

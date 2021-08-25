@@ -16,15 +16,11 @@ typedef int16_t i16;
 
 #define C64(x) UINT64_C(x)
 #define C64_s(x) INT64_C(x)
+#define STRINGIFY(X) #X
 
 //#define STATS_ENABLED
+
 //#define EVAL_DEBUG
-#ifdef EVAL_DEBUG
-#define EVAL_INFO(field, color, val_mg, val_eg) \
-	do {eval_info.Update(field, color, val_mg, val_eg);} while (0)
-#else
-#define EVAL_INFO(field, color, val_mg, val_eg)
-#endif
 
 #ifdef STATS_ENABLED
 #define STATS(x) \

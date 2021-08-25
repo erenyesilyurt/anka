@@ -25,10 +25,9 @@ void anka::GameState::Clear()
 	m_side = NOSIDE;
 	m_zobrist_key = C64(0);
 	m_ply = 0;
-	m_materials[WHITE] = 0;
-	m_materials[BLACK] = 0;
 }
 
+// BUG: trailing whitespaces in fens cause a crash
 bool anka::GameState::LoadPosition(std::string fen)
 {
 	if (fen.empty()) {
@@ -51,9 +50,11 @@ bool anka::GameState::LoadPosition(std::string fen)
 	std::stringstream ss(fen);
 	int num_parts = 0;
 	while (std::getline(ss, fen_parts[num_parts], ' ')) {
-		++num_parts;
-		if (num_parts > 6)
+		if (num_parts >= 6 || fen_parts[num_parts].length() == 0)
 			break;
+		if (fen_parts[num_parts].back() == '\n')
+			fen_parts[num_parts].erase(fen_parts[num_parts].length() - 1);
+		++num_parts;
 	}
 
 	// Side to move
@@ -150,11 +151,9 @@ bool anka::GameState::LoadPosition(std::string fen)
 
 			if (isupper(c)) {
 				bitboard::SetBit(m_piecesBB[WHITE], sq);
-				m_materials[WHITE] += MATERIAL_VALUES[piece];
 			}
 			else if (islower(c)) {
 				bitboard::SetBit(m_piecesBB[BLACK], sq);
-				m_materials[BLACK] += MATERIAL_VALUES[piece];
 			}
 			else {
 				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";

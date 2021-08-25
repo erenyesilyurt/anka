@@ -8,11 +8,13 @@ Anka.make
 MagicGenerator.make
 Makefile
 
+quiet-labeled.epd
 premake5
 premake5.exe
 TODO.txt
 found_magics.txt
 bin/
 build_files/
+best_params/
 x64/
 
