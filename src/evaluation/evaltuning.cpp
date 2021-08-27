@@ -22,7 +22,15 @@
 //	using namespace anka;
 //	anka::InitZobristKeys(rng);
 //	anka::attacks::InitAttacks();
-//	anka::eval_params.InitPST();
+//	anka::g_eval_params.InitPST();
+//	anka::g_trans_table.Init(EngineSettings::DEFAULT_HASH_SIZE);
+//}
+//
+//namespace anka {
+//	// Global structures
+//	TranspositionTable g_trans_table;
+//	EvalParams g_eval_params;
+//	EvalData g_eval_data;
 //}
 //
 //// White respective evaluation of the position
@@ -98,7 +106,7 @@
 //
 //	double MSE(const Solution &solution)
 //	{
-//		anka::eval_params.UpdateParams(solution);
+//		anka::g_eval_params.UpdateParams(solution);
 //		double mse = 0.0;
 //		for (int i = 0; i < batch_size; i++) {
 //			double sigmoid = Sigmoid(Evaluate(positions[i]));
@@ -116,7 +124,7 @@
 //	using namespace anka;
 //	
 //	Solution best_sol;
-//	eval_params.Flatten(best_sol);
+//	g_eval_params.FlattenParams(best_sol);
 //	double best_cost = batch->MSE(best_sol);
 //
 //	printf("Itr 0 MSE: %f RMSE: %f\n", best_cost, sqrt(best_cost));
@@ -146,8 +154,8 @@
 //			printf("Itr %d MSE: %f RMSE: %f\n", itr, best_cost, sqrt(best_cost));
 //			char filename[128];
 //			sprintf(filename, "best_params/best_params725K_LOCAL%d.txt", itr);
-//			anka::eval_params.UpdateParams(best_sol);
-//			anka::eval_params.WriteToFile(filename);
+//			anka::g_eval_params.UpdateParams(best_sol);
+//			anka::g_eval_params.WriteParamsToFile(filename);
 //		}
 //		else if (itr % 50 == 0) {
 //			printf("Itr %d MSE: %f RMSE: %f\n", itr, best_cost, sqrt(best_cost));
@@ -156,8 +164,8 @@
 //	}
 //
 //	printf("\nDone. MSE: %f RMSE: %f\n", best_cost, sqrt(best_cost));
-//	eval_params.UpdateParams(best_sol);
-//	eval_params.WriteToFile("best_params/best_params725K_LOCAL.txt");
+//	g_eval_params.UpdateParams(best_sol);
+//	g_eval_params.WriteParamsToFile("best_params/best_params725K_LOCAL.txt");
 //}
 //
 //

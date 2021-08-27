@@ -7,10 +7,10 @@ namespace anka {
     static char side_char[2] = { 'w', 'b' };
     static Move principal_variation[MAX_PLY * MAX_PLY]{};
     
-    static constexpr int nodes_per_time_check = 16383;
+    static constexpr int nodes_per_time_check = 8191;
     static constexpr int R_null = 2;
 
-    bool NullOk(GameState &pos)
+    static bool NullOk(GameState &pos)
     {
         //return pos.TotalMaterial() > 1200 ? true : false;
         return true;
@@ -42,79 +42,24 @@ namespace anka {
         return success;
     }
 
-    static long long AllocateTime(const GameState& pos, SearchParams& params)
+
+    void SearchInstance::CheckTime(SearchParams& params)
     {
-        long long available_time = 0;
-        long long increment = 0;
-        if (pos.SideToPlay() == WHITE) {
-            available_time = params.wtime;
-            increment = params.winc;
-        }
-        else {
-            available_time = params.btime;
-            increment = params.binc;
-        }
+        auto curr_time = Timer::GetTimeInMs();
+        auto time_passed = curr_time - last_timecheck;
+        last_timecheck = curr_time;
 
-        available_time -= EngineSettings::MOVE_OVERHEAD;
+        params.remaining_time-= time_passed;
 
-
-        // guess the number of remaining moves
-        if (params.movestogo <= 0) {
-            params.movestogo = 30;
-            //if (total_material < 1800) {
-            //    params.movestogo = (total_material >> 6) + 3;
-            //}
-            //else if (total_material < 6100) {
-            //    params.movestogo = (total_material >> 8) + 20;
-            //}
-            //else {
-            //    params.movestogo = (total_material >> 6) - 57;
-            //}
-        }
-
-        // increment
-        available_time += increment;
-
-        return (available_time / params.movestogo);
-    }
-
-    static void CheckUCIStop(SearchParams& params)
-    {
-        char buffer[4096];
-        if (io::PolledRead(buffer, 4096) > 0) {
-            if (strncmp(buffer, "stop", 4) == 0) {
+            if (params.remaining_time < 0)
                 params.uci_stop_flag = true;
-            }
-            else if (strncmp(buffer, "isready", 7) == 0) {
-                printf("readyok\n");
-            }
-            else if (strncmp(buffer, "quit", 4) == 0) {
-                params.uci_stop_flag = true;
-                params.uci_quit_flag = true;
-            }
-        }
-    }
-
-    void SearchInstance::CheckStopConditions(SearchParams& params)
-    {
-        CheckUCIStop(params);
-
-        if (params.check_timeup) {
-            auto curr_time = Timer::GetTimeInMs();
-            auto time_passed = curr_time - last_timecheck;
-            last_timecheck = curr_time;
-
-            params.movetime -= time_passed;
-
-            if (params.movetime < 0)
-                params.uci_stop_flag = true;
-        }
     }
 
     void IterativeDeepening(GameState& pos, SearchParams& params)
     {
         params.start_time = Timer::GetTimeInMs();
-        //memset(principal_variation, 0, MAX_PLY * MAX_PLY * sizeof(Move));
+        params.is_searching = true;
+
         for (int i = 0; i < MAX_PLY * MAX_PLY; i++)
             principal_variation[i] = 0;
 
@@ -122,7 +67,7 @@ namespace anka {
         char best_move_str[6];
         Move best_move = 0;
 
-        trans_table.IncrementAge();
+        g_trans_table.IncrementAge();
         // check if there are no legal moves / only one legal move in the position
         {
             MoveList<256> move_list;
@@ -140,20 +85,7 @@ namespace anka {
         }
 
         if (!skip_search) {
-            // configure time controls
-            int max_depth = MAX_PLY;
-            if (!params.infinite) {
-                if (params.wtime || params.btime || params.movestogo) {
-                    params.check_timeup = true;
-                    params.movetime = AllocateTime(pos, params);
-                }
-                else if (params.movetime) {
-                    params.check_timeup = true;
-                }
-                else if (params.search_depth > 0) {
-                    max_depth = params.search_depth;
-                }
-            }
+            int max_depth = params.depth_limit > 0 ? params.depth_limit : MAX_PLY;
 
             // Iterative deepening loop
             SearchResult result;
@@ -165,7 +97,6 @@ namespace anka {
                 auto end_time = Timer::GetTimeInMs();
 
                 if (params.uci_stop_flag) {
-                    //result.total_time = end_time - params.start_time + 1;
                     break;
                 }
 
@@ -189,7 +120,7 @@ namespace anka {
 
             // don't stop the search in infinite search mode unless a stop command is received
             while (params.infinite && !params.uci_stop_flag) {
-                CheckUCIStop(params);
+
             }
 
         }
@@ -205,15 +136,15 @@ namespace anka {
             best_move_str[4] = '\0';
         }
         printf("bestmove %s\n", best_move_str);
-
-        STATS(trans_table.PrintStatistics());
+        STATS(g_trans_table.PrintStatistics());
+        params.is_searching = false;
     }
 
     int SearchInstance::Quiescence(GameState& pos, int alpha, int beta, int depth, int ply, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
-        if ((nodes_visited & nodes_per_time_check) == 0) {
-            CheckStopConditions(params);
+        if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
+            CheckTime(params);
         }
 
         if (pos.IsDrawn())
@@ -268,6 +199,9 @@ namespace anka {
     int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
+        if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
+            CheckTime(params);
+        }
 
         int old_alpha = alpha;
         static_assert(MAX_PLY == 128, "pv_index calculation must be modified for max_ply != 128");
@@ -280,9 +214,7 @@ namespace anka {
             principal_variation[pv_index] = 0;
         }
 
-        if ((nodes_visited & nodes_per_time_check) == 0) {
-            CheckStopConditions(params);
-        }
+
 
         if (pos.IsDrawn()) {
             return 0;
@@ -294,7 +226,7 @@ namespace anka {
         u64 pos_key = pos.PositionKey();
         TTRecord probe_result;
         Move hash_move = 0;
-        if (trans_table.Get(pos_key, probe_result, ply)) {
+        if (g_trans_table.Get(pos_key, probe_result, ply)) {
             hash_move = probe_result.move;
             if (!is_pv && probe_result.depth >= depth) {
                 switch (probe_result.GetNodeType()) {
@@ -369,7 +301,7 @@ namespace anka {
                 STATS(num_fail_high_first++);
                 if (!in_check && move::IsQuiet(best_move))
                     SetKillerMove(best_move, ply);
-                trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
+                g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
                 return best_score;
             }
             ANKA_ASSERT(is_pv);
@@ -398,7 +330,7 @@ namespace anka {
             if (score > best_score) {
                 if (score >= beta) {
                     STATS(num_fail_high++);
-                    trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score, ply, params.uci_stop_flag);
+                    g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score, ply, params.uci_stop_flag);
                     if (!in_check && move::IsQuiet(move))
                         SetKillerMove(move, ply);
                     return score;
@@ -413,10 +345,10 @@ namespace anka {
 
         if (best_score > old_alpha) {
             ANKA_ASSERT(is_pv);
-            trans_table.Put(pos_key, NodeType::EXACT, depth, best_move, best_score, ply, params.uci_stop_flag);
+            g_trans_table.Put(pos_key, NodeType::EXACT, depth, best_move, best_score, ply, params.uci_stop_flag);
         }
         else {
-            trans_table.Put(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
+            g_trans_table.Put(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
         }
 
         return best_score;

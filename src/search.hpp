@@ -48,11 +48,11 @@ namespace anka {
         template <bool pruning = true>
         int PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params);
     private:
-        void CheckStopConditions(SearchParams& params);
+        void CheckTime(SearchParams& params);
 	}; // SearchInstance
 
 
 
 
-    void IterativeDeepening(GameState& pos, SearchParams& params);
+    void IterativeDeepening(GameState& root_pos, SearchParams& params);
 }

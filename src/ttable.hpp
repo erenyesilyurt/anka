@@ -280,6 +280,6 @@ namespace anka {
 		
 	};
 
-	extern TranspositionTable trans_table;
+	extern TranspositionTable g_trans_table;
 
 }

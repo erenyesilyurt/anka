@@ -1,7 +1,7 @@
 //#define EVAL_TUNING
 //#include "evaluation.hpp"
 //#include "timer.hpp"
-//
+//#include "ttable.hpp"
 //
 //namespace {
 //	// Given an evaluation in centipawns, returns the expected outcome of the game (0-1)
@@ -101,9 +101,18 @@
 //		using namespace anka;
 //		anka::InitZobristKeys(rng);
 //		anka::attacks::InitAttacks();
-//		anka::eval_params.InitPST();
+//		anka::g_eval_params.InitPST();
+//		anka::g_trans_table.Init(EngineSettings::DEFAULT_HASH_SIZE);
 //	}
 //}
+//
+//namespace anka {
+//	// Global structures
+//	TranspositionTable g_trans_table;
+//	EvalParams g_eval_params;
+//	EvalData g_eval_data;
+//}
+//
 //int main()
 //{
 //	anka::RNG rng;
