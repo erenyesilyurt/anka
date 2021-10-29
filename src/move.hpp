@@ -51,7 +51,7 @@ namespace anka {
 		bool Validate(Move m, Square from, Square to, PieceType moving_piece, 
 			bool is_prom = false, bool is_capture = false, bool is_castle = false, 
 			bool is_dpush = false, bool is_epcapture = false, 
-			PieceType cap_piece = piece_type::NOPIECE, PieceType prom_piece = piece_type::NOPIECE);
+			PieceType cap_piece = NO_PIECE, PieceType prom_piece = NO_PIECE);
 
 		struct MoveMasks {
 			static constexpr u32 FROM_SQ = 0x3f;

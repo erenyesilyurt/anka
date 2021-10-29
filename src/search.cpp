@@ -1,7 +1,7 @@
 #include "search.hpp"
-#include "io.hpp"
 #include "util.hpp"
 #include "evaluation.hpp"
+
 
 namespace anka {
     static char side_char[2] = { 'w', 'b' };
@@ -114,7 +114,7 @@ namespace anka {
                 #endif
 
 
-                io::PrintSearchResults(pos, result);
+                result.Print(pos);
                 //ValidatePV(pos, principal_variation);
             }
 

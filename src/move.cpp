@@ -2,12 +2,12 @@
 
 int anka::move::ToString(Move move, char* result)
 {
-	int from_file = square::GetFile(FromSquare(move));
-	int from_rank = square::GetRank(FromSquare(move));
-	int to_file = square::GetFile(ToSquare(move));
-	int to_rank = square::GetRank(ToSquare(move));
+	int from_file = GetFile(FromSquare(move));
+	int from_rank = GetRank(FromSquare(move));
+	int to_file = GetFile(ToSquare(move));
+	int to_rank = GetRank(ToSquare(move));
 	int str_len = 4;
-	PieceType promoted = piece_type::NOPIECE;
+	PieceType promoted = NO_PIECE;
 	if (IsPromotion(move)) {
 		promoted = PromotedPiece(move);
 	}
@@ -18,15 +18,15 @@ int anka::move::ToString(Move move, char* result)
 	result[3] = ('1' + to_rank);
 	result[4] = '\0';
 
-	if (promoted != piece_type::NOPIECE) {
+	if (promoted != NO_PIECE) {
 		char piece = 'q';
-		if (promoted == piece_type::KNIGHT) {
+		if (promoted == KNIGHT) {
 			piece = 'n';
 		}
-		else if (promoted == piece_type::ROOK) {
+		else if (promoted == ROOK) {
 			piece = 'r';
 		}
-		else if (promoted == piece_type::BISHOP) {
+		else if (promoted == BISHOP) {
 			piece = 'b';
 		}
 

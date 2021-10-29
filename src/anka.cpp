@@ -23,6 +23,7 @@ int main()
 	
 	InitZobristKeys(rng);
 	attacks::InitAttacks();
+
 	g_eval_params.InitPST();
 	g_trans_table.Init(EngineSettings::DEFAULT_HASH_SIZE);
 

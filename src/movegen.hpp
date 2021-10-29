@@ -76,8 +76,7 @@ namespace anka {
 		}
 
 		// generates legal moves. returns true if in check
-		// if quiescence is true, only generates check evasions and captures
-		bool GenerateLegalMoves(const GameState& pos, bool quiescence = false);
+		bool GenerateLegalMoves(const GameState& pos);
 		void GenerateLegalCaptures(const GameState& pos);
 
 		template <int side, int piece>
@@ -85,7 +84,6 @@ namespace anka {
 			Bitboard opp_pieces, Bitboard free_to_move,
 			Bitboard pushables, Bitboard capturables)
 		{
-			using namespace piece_type;
 			static_assert(piece >= KNIGHT && piece <= QUEEN, "Piece type must be a major or minor piece");
 
 			ally_pieces &= pos.Pieces<side, piece>() & free_to_move;
@@ -170,22 +168,18 @@ namespace anka {
 		}
 
 	private:
-		void GenerateNonPawnMoves(const GameState& pos,
-			Bitboard ally_pieces, Bitboard opp_pieces,
-			Bitboard occ, Bitboard free_mask,
-			Bitboard capturables, Bitboard pushables);
-
+		// Generate castling moves. Assumes that king is not in check!
 		template <int side>
 		void GenerateCastleMoves(const GameState &pos)
 		{
 			Bitboard occ = pos.Occupancy();
-			Bitboard castle_k_empty_mask = (C64(1) << square::F1) | (C64(1) << square::G1);
-			Bitboard castle_q_empty_mask = (C64(1) << square::B1) | (C64(1) << square::C1) | (C64(1) << square::D1);
+			Bitboard castle_k_empty_mask = (C64(1) << F1) | (C64(1) << G1);
+			Bitboard castle_q_empty_mask = (C64(1) << B1) | (C64(1) << C1) | (C64(1) << D1);
 			Bitboard castle_k = CastlePermFlags_t::castle_wk;
 			Bitboard castle_q = CastlePermFlags_t::castle_wq;
 			if constexpr (side == BLACK) {
-				castle_k_empty_mask = (C64(1) << square::F8) | (C64(1) << square::G8);
-				castle_q_empty_mask = (C64(1) << square::B8) | (C64(1) << square::C8) | (C64(1) << square::D8);
+				castle_k_empty_mask = (C64(1) << F8) | (C64(1) << G8);
+				castle_q_empty_mask = (C64(1) << B8) | (C64(1) << C8) | (C64(1) << D8);
 				castle_k = CastlePermFlags_t::castle_bk;
 				castle_q = CastlePermFlags_t::castle_bq;
 			}
@@ -194,19 +188,17 @@ namespace anka {
 			if (pos.CastlingRights() & castle_k) {
 				if ((castle_k_empty_mask & occ) == 0) {
 					if constexpr (side == WHITE) {
-						if (!pos.IsAttacked<BLACK>(square::E1)
-							&& !pos.IsAttacked<BLACK>(square::F1)
-							&& !pos.IsAttacked<BLACK>(square::G1))
+						if (!pos.IsAttacked<BLACK>(F1)
+							&& !pos.IsAttacked<BLACK>(G1))
 						{
-							AddCastle(square::E1, square::G1);
+							AddCastle(E1, G1);
 						}
 					}
 					else { // black
-						if (!pos.IsAttacked<WHITE>(square::E8)
-							&& !pos.IsAttacked<WHITE>(square::F8)
-							&& !pos.IsAttacked<WHITE>(square::G8))
+						if (!pos.IsAttacked<WHITE>(F8)
+							&& !pos.IsAttacked<WHITE>(G8))
 						{
-							AddCastle(square::E8, square::G8);
+							AddCastle(E8, G8);
 						}
 					}
 				}
@@ -216,19 +208,17 @@ namespace anka {
 			if (pos.CastlingRights() & castle_q) {
 				if ((castle_q_empty_mask & occ) == 0) {
 					if constexpr (side == WHITE) {
-						if (!pos.IsAttacked<BLACK>(square::E1)
-							&& !pos.IsAttacked<BLACK>(square::D1)
-							&& !pos.IsAttacked<BLACK>(square::C1))
+						if (!pos.IsAttacked<BLACK>(D1)
+							&& !pos.IsAttacked<BLACK>(C1))
 						{
-							AddCastle(square::E1, square::C1);
+							AddCastle(E1, C1);
 						}
 					}
 					else { // black
-						if (!pos.IsAttacked<WHITE>(square::E8)
-							&& !pos.IsAttacked<WHITE>(square::D8)
-							&& !pos.IsAttacked<WHITE>(square::C8))
+						if (!pos.IsAttacked<WHITE>(D8)
+							&& !pos.IsAttacked<WHITE>(C8))
 						{
-							AddCastle(square::E8, square::C8);
+							AddCastle(E8, C8);
 						}
 					}
 				}
@@ -258,7 +248,7 @@ namespace anka {
 				Square from = to - pawn_east_dir;
 				PieceType captured_piece = pos.GetPiece(to);
 
-				AddCapture<piece_type::PAWN>(from, to, captured_piece);
+				AddCapture<PAWN>(from, to, captured_piece);
 				pawn_east_targets &= pawn_east_targets - 1;
 			}
 
@@ -281,7 +271,7 @@ namespace anka {
 				Square from = to - pawn_west_dir;
 				PieceType captured_piece = pos.GetPiece(to);
 
-				AddCapture<piece_type::PAWN>(from, to, captured_piece);
+				AddCapture<PAWN>(from, to, captured_piece);
 				pawn_west_targets &= pawn_west_targets - 1;
 			}
 
@@ -297,13 +287,13 @@ namespace anka {
 		}
 
 		template <int side>
-		bool GenerateMoves(const GameState& pos, bool quiescence = false);
+		bool GenerateMoves(const GameState& pos);
 
 		template <int side>
 		void GenerateCaptures(const GameState& pos);
 	private:
 
-		static constexpr int PromotablePieces[4] { piece_type::QUEEN, piece_type::BISHOP,  piece_type::ROOK, piece_type::KNIGHT };
+		static constexpr int PromotablePieces[4] { QUEEN, BISHOP,  ROOK, KNIGHT };
 
 
 		force_inline void AddPawnPush(Square from, Square to)
@@ -313,13 +303,13 @@ namespace anka {
 
 			Move m = from;
 			m |= (to << 6);
-			m |= (piece_type::PAWN << 23); // moving piece
+			m |= (PAWN << 23); // moving piece
 	
 			moves[length].move = m;
 			moves[length].score = move::QUIET_SCORE;
 			++length;
 
-			ANKA_ASSERT(move::Validate(m, from, to, piece_type::PAWN));
+			ANKA_ASSERT(move::Validate(m, from, to, PAWN));
 		}
 
 		force_inline void AddDoublePawnPush(Square from, Square to)
@@ -329,7 +319,7 @@ namespace anka {
 
 			Move m(from);
 			m |= (to << 6);
-			m |= (piece_type::PAWN << 23); // moving piece
+			m |= (PAWN << 23); // moving piece
 			
 			move::SetDoublePawnBit(m);
 
@@ -337,7 +327,7 @@ namespace anka {
 			moves[length].score = move::QUIET_SCORE;
 			++length;
 
-			ANKA_ASSERT(move::Validate(m, from, to, piece_type::PAWN, 0, 0, 0, 1));
+			ANKA_ASSERT(move::Validate(m, from, to, PAWN, 0, 0, 0, 1));
 		}
 
 		force_inline void AddPromotions(Square from, Square to)
@@ -348,28 +338,28 @@ namespace anka {
 			for (auto prom_piece : PromotablePieces) {
 				Move m(from);
 				m |= (to << 6);
-				m |= (piece_type::PAWN << 23); // moving piece
+				m |= (PAWN << 23); // moving piece
 				m |= (prom_piece << 20); // promoted piece
 
 				move::SetPromotionBit(m);
 				moves[length].move = m;
 				moves[length].score = move::PROMOTION_SCORE;
 				++length;
-				ANKA_ASSERT(move::Validate(m, from, to, piece_type::PAWN,1,0,0,0,0,0,prom_piece));
+				ANKA_ASSERT(move::Validate(m, from, to, PAWN,1,0,0,0,0,0,prom_piece));
 			}
 		}
 
 
 		force_inline void AddCapturePromotions(Square from, Square to, PieceType captured_piece)
 		{
-			ANKA_ASSERT(captured_piece >= piece_type::PAWN && captured_piece < piece_type::KING);
+			ANKA_ASSERT(captured_piece >= PAWN && captured_piece < KING);
 			ANKA_ASSERT(from >= 0 && from < 64);
 			ANKA_ASSERT(to >= 0 && to < 64);
 
 			for (auto prom_piece : PromotablePieces) {
 				Move m(from);
 				m |= (to << 6);
-				m |= (piece_type::PAWN << 23); // moving piece
+				m |= (PAWN << 23); // moving piece
 				m |= (prom_piece << 20); // promoted piece
 				m |= (captured_piece << 17); // captured piece
 
@@ -377,17 +367,17 @@ namespace anka {
 				move::SetCaptureBit(m);
 
 				moves[length].move = m;
-				moves[length].score = move::MVVLVA_CAPTURE_SCORES[piece_type::PAWN][captured_piece] + move::PROMOTION_SCORE;
+				moves[length].score = move::MVVLVA_CAPTURE_SCORES[PAWN][captured_piece] + move::PROMOTION_SCORE;
 				++length;
-				ANKA_ASSERT(move::Validate(m, from, to, piece_type::PAWN, 1, 1, 0, 0, 0, captured_piece, prom_piece));
+				ANKA_ASSERT(move::Validate(m, from, to, PAWN, 1, 1, 0, 0, 0, captured_piece, prom_piece));
 			}
 		}
 
 		template <int moving_piece>
 		force_inline void AddCapture(Square from, Square to, PieceType captured_piece)
 		{
-			ANKA_ASSERT(captured_piece >= piece_type::PAWN && captured_piece < piece_type::KING);
-			static_assert(moving_piece >= piece_type::PAWN && moving_piece <= piece_type::KING, "Invalid moving piece type");
+			ANKA_ASSERT(captured_piece >= PAWN && captured_piece < KING);
+			static_assert(moving_piece >= PAWN && moving_piece <= KING, "Invalid moving piece type");
 			ANKA_ASSERT(from >= 0 && from < 64);
 			ANKA_ASSERT(to >= 0 && to < 64);
 
@@ -413,23 +403,23 @@ namespace anka {
 
 			Move m(from);
 			m |= (to << 6);
-			m |= (piece_type::PAWN << 23); // moving piece
-			m |= (piece_type::PAWN << 17); // captured piece
+			m |= (PAWN << 23); // moving piece
+			m |= (PAWN << 17); // captured piece
 
 			move::SetCaptureBit(m);
 			move::SetEpCaptureBit(m);
 
 			moves[length].move = m;
-			moves[length].score = move::MVVLVA_CAPTURE_SCORES[piece_type::PAWN][piece_type::PAWN];
+			moves[length].score = move::MVVLVA_CAPTURE_SCORES[PAWN][PAWN];
 			++length;
 
-			ANKA_ASSERT(move::Validate(m, from, to, piece_type::PAWN, 0, 1, 0, 0, 1, piece_type::PAWN, 0));
+			ANKA_ASSERT(move::Validate(m, from, to, PAWN, 0, 1, 0, 0, 1, PAWN, 0));
 		}
 
 		template <int moving_piece>
 		force_inline void AddQuiet(Square from, Square to)
 		{
-			static_assert(moving_piece >= piece_type::PAWN && moving_piece <= piece_type::KING, "Invalid moving piece type");
+			static_assert(moving_piece >= PAWN && moving_piece <= KING, "Invalid moving piece type");
 			ANKA_ASSERT(from >= 0 && from < 64);
 			ANKA_ASSERT(to >= 0 && to < 64);
 
@@ -451,7 +441,7 @@ namespace anka {
 
 			Move m = from;
 			m |= (to << 6);
-			m |= (piece_type::KING << 23); // moving piece
+			m |= (KING << 23); // moving piece
 
 			move::SetCastleBit(m);
 
@@ -459,21 +449,21 @@ namespace anka {
 			moves[length].score = move::CASTLE_SCORE;
 			++length;
 
-			ANKA_ASSERT(move::Validate(m, from, to, piece_type::KING,0,0,1));
+			ANKA_ASSERT(move::Validate(m, from, to, KING,0,0,1));
 		}
 	};
 
 
 	template<size_t n>
-	force_inline bool MoveList<n>::GenerateLegalMoves(const GameState& pos, bool quiescence)
+	force_inline bool MoveList<n>::GenerateLegalMoves(const GameState& pos)
 	{
 		length = 0;
 
 		if (pos.SideToPlay() == WHITE) {
-			return GenerateMoves<WHITE>(pos, quiescence);
+			return GenerateMoves<WHITE>(pos);
 		}
 		else if (pos.SideToPlay() == BLACK) {
-			return GenerateMoves<BLACK>(pos, quiescence);
+			return GenerateMoves<BLACK>(pos);
 		}
 		else
 			return false;
@@ -499,8 +489,7 @@ namespace anka {
 	template<int side>
 	inline void MoveList<n>::GenerateCaptures(const GameState& pos)
 	{
-		using namespace piece_type;
-		static_assert(side == WHITE || side == BLACK, "Side must be white or black when generating moves.");
+		static_assert(side == WHITE || side == BLACK, "Side must be white or black.");
 
 		constexpr int ally_side(side);
 		constexpr int opponent_side(side ^ 1);
@@ -552,22 +541,17 @@ namespace anka {
 			else if (attacks::KingAttacks(sq) & opp_kings)
 				continue;
 			else
-				AddCapture<piece_type::KING>(king_sq, sq, pos.GetPiece(sq));
+				AddCapture<KING>(king_sq, sq, pos.GetPiece(sq));
 		}
 	
-
-		if (num_checkers > 1) // double check
-			return;
-
-
-
 		Bitboard capturable_squares = UINT64_MAX;
 		Bitboard pushable_squares = C64(0);
-
-
 		if (num_checkers == 1) { // single check
 			// capturing checker
 			capturable_squares = checkers;
+		}
+		else if (num_checkers > 1) { // double check
+			return;
 		}
 
 		// CALCULATE ABSOLUTELY PINNED PIECES
@@ -629,8 +613,8 @@ namespace anka {
 
 		// EP CAPTURE
 		Square ep_square = pos.EnPassantSquare();
-		if (ep_square != square::NOSQUARE) {
-			constexpr Rank ep_rank = rank::FIVE - side; //
+		if (ep_square != NO_SQUARE) {
+			constexpr Rank ep_rank = RANK_FIVE - side; //
 			constexpr int ep_capture_target_dir = SOUTH + (side << 4); // south if white, north if black
 			Square ep_capture_target = ep_square + ep_capture_target_dir;
 
@@ -644,7 +628,7 @@ namespace anka {
 					ep_attackers &= ep_attackers - 1;
 
 					// check if ep capture results in a check
-					if (square::GetRank(king_sq) == ep_rank) {
+					if (GetRank(king_sq) == ep_rank) {
 						// xray attack through involved pawns
 						u64 blockers = (C64(1) << sq) | (C64(1) << ep_capture_target);
 						Bitboard xray_attacks = rook_attacks_king_sq ^ attacks::RookAttacks(king_sq, occ ^ blockers);
@@ -668,10 +652,9 @@ namespace anka {
 
 	template<size_t n>
 	template<int side>
-	inline bool MoveList<n>::GenerateMoves(const GameState& pos, bool quiescence)
+	inline bool MoveList<n>::GenerateMoves(const GameState& pos)
 	{
-		using namespace piece_type;
-		static_assert(side == WHITE || side == BLACK, "Side must be white or black when generating moves.");
+		static_assert(side == WHITE || side == BLACK, "Side must be white or black.");
 
 		constexpr int ally_side(side);
 		constexpr int opponent_side(side ^ 1);
@@ -703,85 +686,75 @@ namespace anka {
 
 		int num_checkers = bitboard::PopCount(checkers);
 
-		if (!quiescence || num_checkers > 0) {
-			// GENERATE LEGAL KING MOVES
-			Bitboard king_attacks = attacks::KingAttacks(king_sq);
-			Bitboard king_targets = king_attacks & opp_pieces;
-			Bitboard king_push_targets = king_attacks & empty;
+		
+		// GENERATE LEGAL KING MOVES
+		Bitboard king_attacks = attacks::KingAttacks(king_sq);
+		Bitboard king_targets = king_attacks & opp_pieces;
+		Bitboard king_push_targets = king_attacks & empty;
 
-			while (king_targets) {
-				Square sq = bitboard::BitScanForward(king_targets);
-				king_targets &= king_targets - 1;
+		while (king_targets) {
+			Square sq = bitboard::BitScanForward(king_targets);
+			king_targets &= king_targets - 1;
 
-				// check if target square is under attack
-				// slider attacks need to xray through king
-				if (attacks::KnightAttacks(sq) & opp_knights)
-					continue;
-				else if (attacks::BishopAttacks(sq, occ ^ ally_king) & opp_bishops_and_queens)
-					continue;
-				else if (attacks::RookAttacks(sq, occ ^ ally_king) & opp_rooks_and_queens)
-					continue;
-				else if (attacks::PawnAttacks<ally_side>(sq) & opp_pawns)
-					continue;
-				else if (attacks::KingAttacks(sq) & opp_kings)
-					continue;
-				else
-					AddCapture<piece_type::KING>(king_sq, sq, pos.GetPiece(sq));
-			}
+			// check if target square is under attack
+			// slider attacks need to xray through king
+			if (attacks::KnightAttacks(sq) & opp_knights)
+				continue;
+			else if (attacks::BishopAttacks(sq, occ ^ ally_king) & opp_bishops_and_queens)
+				continue;
+			else if (attacks::RookAttacks(sq, occ ^ ally_king) & opp_rooks_and_queens)
+				continue;
+			else if (attacks::PawnAttacks<ally_side>(sq) & opp_pawns)
+				continue;
+			else if (attacks::KingAttacks(sq) & opp_kings)
+				continue;
+			else
+				AddCapture<KING>(king_sq, sq, pos.GetPiece(sq));
+		}
 
-			while (king_push_targets) {
-				Square sq = bitboard::BitScanForward(king_push_targets);
-				king_push_targets &= king_push_targets - 1;
+		while (king_push_targets) {
+			Square sq = bitboard::BitScanForward(king_push_targets);
+			king_push_targets &= king_push_targets - 1;
 
-				// check if target square is under attack
-				if (attacks::KnightAttacks(sq) & opp_knights)
-					continue;
-				else if (attacks::BishopAttacks(sq, occ ^ ally_king) & opp_bishops_and_queens)
-					continue;
-				else if (attacks::RookAttacks(sq, occ ^ ally_king) & opp_rooks_and_queens)
-					continue;
-				else if (attacks::PawnAttacks<ally_side>(sq) & opp_pawns)
-					continue;
-				else if (attacks::KingAttacks(sq) & opp_kings)
-					continue;
-				else
-					AddQuiet<piece_type::KING>(king_sq, sq);
-			}
+			// check if target square is under attack
+			if (attacks::KnightAttacks(sq) & opp_knights)
+				continue;
+			else if (attacks::BishopAttacks(sq, occ ^ ally_king) & opp_bishops_and_queens)
+				continue;
+			else if (attacks::RookAttacks(sq, occ ^ ally_king) & opp_rooks_and_queens)
+				continue;
+			else if (attacks::PawnAttacks<ally_side>(sq) & opp_pawns)
+				continue;
+			else if (attacks::KingAttacks(sq) & opp_kings)
+				continue;
+			else
+				AddQuiet<KING>(king_sq, sq);
 		}
 
 		
-
-		if (num_checkers > 1) // double check
-			return true;
-
-		
-
+		// thanks to https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
 		Bitboard capturable_squares = UINT64_MAX;
 		Bitboard pushable_squares = UINT64_MAX;
 
-		// thanks to https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
-		if (num_checkers == 1) { // single check
+		if (num_checkers == 0) {
+			GenerateCastleMoves<side>(pos);
+		}
+		else if (num_checkers == 1) {
 			// capturing checker
 			capturable_squares = checkers;
 
 			// interposing with another piece
 			Square checker_sq = bitboard::BitScanForward(checkers);
 			PieceType checker_piece = pos.GetPiece(checker_sq);
-			if (piece_type::IsSlider(checker_piece)) {
+			if (PieceIsSlider(checker_piece)) {
 				pushable_squares = attacks::InBetween(checker_sq, king_sq);
 			}
 			else {
 				pushable_squares = C64(0);
 			}
 		}
-		else {
-			if (quiescence) {
-				pushable_squares = C64(0);
-			}
-			else {
-				// castling
-				GenerateCastleMoves<side>(pos);
-			}
+		else if (num_checkers > 1) { // double check
+			return true;
 		}
 
 
@@ -845,8 +818,8 @@ namespace anka {
 
 		// EP CAPTURE
 		Square ep_square = pos.EnPassantSquare();
-		if (ep_square != square::NOSQUARE) {
-			constexpr Rank ep_rank = rank::FIVE - side; //
+		if (ep_square != NO_SQUARE) {
+			constexpr Rank ep_rank = RANK_FIVE - side; //
 			constexpr int ep_capture_target_dir = SOUTH + (side << 4); // south if white, north if black
 			Square ep_capture_target = ep_square + ep_capture_target_dir;
 
@@ -860,7 +833,7 @@ namespace anka {
 					ep_attackers &= ep_attackers - 1;
 
 					// check if ep capture results in a check
-					if (square::GetRank(king_sq) == ep_rank) {
+					if (GetRank(king_sq) == ep_rank) {
 						// xray attack through involved pawns
 						u64 blockers = (C64(1) << sq) | (C64(1) << ep_capture_target);
 						Bitboard xray_attacks = rook_attacks_king_sq ^ attacks::RookAttacks(king_sq, occ ^ blockers);
@@ -879,106 +852,9 @@ namespace anka {
 		GeneratePieceMoves<side, ROOK>(pos, ally_pieces, opp_pieces, free_to_move, pushable_squares, capturable_squares);
 		GeneratePieceMoves<side, QUEEN>(pos, ally_pieces, opp_pieces, free_to_move, pushable_squares, capturable_squares);
 
-		//GenerateNonPawnMoves(pos, ally_pieces, opp_pieces, occ, free_to_move, capturable_squares, pushable_squares);
-
 		return (bool)num_checkers;
 	}
 
-	
-	template<size_t n>
-	inline void MoveList<n>::GenerateNonPawnMoves(const GameState& pos,
-		Bitboard ally_pieces, Bitboard opp_pieces,
-		Bitboard occ, Bitboard free_mask,
-		Bitboard capturables, Bitboard pushables )
-	{
-		using namespace piece_type;
-
-		Bitboard empty = ~occ;
-
-		// KNIGHT MOVES
-		Bitboard ally_knights = ally_pieces & pos.Knights() & free_mask;
-
-		while (ally_knights) {
-			Square from = bitboard::BitScanForward(ally_knights);
-			Bitboard attacks = attacks::KnightAttacks(from);
-			Bitboard cap_targets = attacks & opp_pieces & capturables;
-			Bitboard push_targets = attacks & empty & pushables;
-			while (cap_targets) {
-				Square to = bitboard::BitScanForward(cap_targets);
-				AddCapture<KNIGHT>(from, to, pos.GetPiece(to));
-				cap_targets &= cap_targets - 1;
-			}
-			while (push_targets) {
-				Square to = bitboard::BitScanForward(push_targets);
-				AddQuiet<KNIGHT>(from, to);
-				push_targets &= push_targets - 1;
-			}
-			ally_knights &= ally_knights - 1;
-		}
-
-		// ROOK MOVES
-		Bitboard ally_rooks = ally_pieces & pos.Rooks() & free_mask;
-
-		while (ally_rooks) {
-			Square from = bitboard::BitScanForward(ally_rooks);
-			Bitboard attacks = attacks::RookAttacks(from, occ);
-			Bitboard cap_targets = attacks & opp_pieces & capturables;
-			Bitboard push_targets = attacks & empty & pushables;
-			while (cap_targets) {
-				Square to = bitboard::BitScanForward(cap_targets);
-				AddCapture<ROOK>(from, to, pos.GetPiece(to));
-				cap_targets &= cap_targets - 1;
-			}
-			while (push_targets) {
-				Square to = bitboard::BitScanForward(push_targets);
-				AddQuiet<ROOK>(from, to);
-				push_targets &= push_targets - 1;
-			}
-			ally_rooks &= ally_rooks - 1;
-		}
-
-		// BISHOP MOVES
-		Bitboard ally_bishops = ally_pieces & pos.Bishops() & free_mask;
-
-		while (ally_bishops) {
-			Square from = bitboard::BitScanForward(ally_bishops);
-			Bitboard attacks = attacks::BishopAttacks(from, occ);
-			Bitboard cap_targets = attacks & opp_pieces & capturables;
-			Bitboard push_targets = attacks & empty & pushables;
-			while (cap_targets) {
-				Square to = bitboard::BitScanForward(cap_targets);
-				AddCapture<BISHOP>(from, to, pos.GetPiece(to));
-				cap_targets &= cap_targets - 1;
-			}
-			while (push_targets) {
-				Square to = bitboard::BitScanForward(push_targets);
-				AddQuiet<BISHOP>(from, to);
-				push_targets &= push_targets - 1;
-			}
-			ally_bishops &= ally_bishops - 1;
-		}
-
-		// QUEEN MOVES
-		Bitboard ally_queens = ally_pieces & pos.Queens() & free_mask;
-
-		while (ally_queens) {
-			Square from = bitboard::BitScanForward(ally_queens);
-			Bitboard attacks = attacks::QueenAttacks(from, occ);
-			Bitboard cap_targets = attacks & opp_pieces & capturables;
-			Bitboard push_targets = attacks & empty & pushables;
-			while (cap_targets) {
-				Square to = bitboard::BitScanForward(cap_targets);
-				AddCapture<QUEEN>(from, to, pos.GetPiece(to));
-				cap_targets &= cap_targets - 1;
-			}
-			while (push_targets) {
-				Square to = bitboard::BitScanForward(push_targets);
-				AddQuiet<QUEEN>(from, to);
-				push_targets &= push_targets - 1;
-			}
-			ally_queens &= ally_queens - 1;
-		}
-	}
 
 	template<size_t n>
 	inline void MoveList<n>::PrintMoves() const

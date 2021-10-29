@@ -206,22 +206,22 @@ namespace anka {
 		void InitPST()
 		{
 			for (Side color = WHITE; color < NUM_SIDES; color++) {
-				for (Square sq = square::A1; sq <= square::H8; sq++) {
+				for (Square sq = A1; sq <= H8; sq++) {
 					Square pst_sq = (color == WHITE ? sq ^ 56 : sq);
 
-					PST_mg[color][piece_type::PAWN][sq] = pawns_pst_mg[pst_sq];
-					PST_mg[color][piece_type::KNIGHT][sq] = knights_pst_mg[pst_sq];
-					PST_mg[color][piece_type::BISHOP][sq] = bishops_pst_mg[pst_sq];
-					PST_mg[color][piece_type::ROOK][sq] = rooks_pst_mg[pst_sq];
-					PST_mg[color][piece_type::QUEEN][sq] = queens_pst_mg[pst_sq];
-					PST_mg[color][piece_type::KING][sq] = king_pst_mg[pst_sq];
+					PST_mg[color][PAWN][sq] = pawns_pst_mg[pst_sq];
+					PST_mg[color][KNIGHT][sq] = knights_pst_mg[pst_sq];
+					PST_mg[color][BISHOP][sq] = bishops_pst_mg[pst_sq];
+					PST_mg[color][ROOK][sq] = rooks_pst_mg[pst_sq];
+					PST_mg[color][QUEEN][sq] = queens_pst_mg[pst_sq];
+					PST_mg[color][KING][sq] = king_pst_mg[pst_sq];
 
-					PST_eg[color][piece_type::PAWN][sq] = pawns_pst_eg[pst_sq];
-					PST_eg[color][piece_type::KNIGHT][sq] = knights_pst_eg[pst_sq];
-					PST_eg[color][piece_type::BISHOP][sq] = bishops_pst_eg[pst_sq];
-					PST_eg[color][piece_type::ROOK][sq] = rooks_pst_eg[pst_sq];
-					PST_eg[color][piece_type::QUEEN][sq] = queens_pst_eg[pst_sq];
-					PST_eg[color][piece_type::KING][sq] = king_pst_eg[pst_sq];
+					PST_eg[color][PAWN][sq] = pawns_pst_eg[pst_sq];
+					PST_eg[color][KNIGHT][sq] = knights_pst_eg[pst_sq];
+					PST_eg[color][BISHOP][sq] = bishops_pst_eg[pst_sq];
+					PST_eg[color][ROOK][sq] = rooks_pst_eg[pst_sq];
+					PST_eg[color][QUEEN][sq] = queens_pst_eg[pst_sq];
+					PST_eg[color][KING][sq] = king_pst_eg[pst_sq];
 				}
 			}
 		}
@@ -229,7 +229,7 @@ namespace anka {
 #ifdef EVAL_TUNING
 		void UpdateParams(const std::array<int, NUM_PARAMS>& new_params)
 		{
-			for (Square sq = 0; sq <= square::H8; sq++) {
+			for (Square sq = 0; sq <= H8; sq++) {
 				knights_pst_mg[sq] = new_params[sq];
 				knights_pst_eg[sq] = new_params[64 + sq];
 				bishops_pst_mg[sq] = new_params[128 + sq];
@@ -271,7 +271,7 @@ namespace anka {
 
 		void FlattenParams(std::array<int, NUM_PARAMS>& out_params) const
 		{
-			for (Square sq = 0; sq <= square::H8; sq++) {
+			for (Square sq = 0; sq <= H8; sq++) {
 				out_params[sq] = knights_pst_mg[sq];
 				out_params[64 + sq] = knights_pst_eg[sq];
 				out_params[128 + sq] = bishops_pst_mg[sq];
@@ -314,11 +314,11 @@ namespace anka {
 
 		#define WRITE_PST(pst_name, file_stream) \
 			do { fprintf(file_stream, "int " STRINGIFY(pst_name) "[64]{"); \
-			for (Square sq = square::A1; sq < square::H8; sq++) { \
+			for (Square sq = A1; sq < H8; sq++) { \
 					if (sq % 8 == 0) fprintf(file_stream, "\n\t"); \
 					fprintf(file_stream, "%d, ", pst_name[sq]); \
 			} \
-			fprintf(file_stream, "%d\n};\n\n", pst_name[square::H8]); } while (0)
+			fprintf(file_stream, "%d\n};\n\n", pst_name[H8]); } while (0)
 
 
 		#define WRITE_FEATURE(feature, file_stream) \

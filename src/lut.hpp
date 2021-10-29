@@ -3,7 +3,7 @@
 /* Look-up tables (LUT)*/
 namespace anka {
 	namespace lut {
-		// enum { NOPIECE = 0, PAWN = 2, KNIGHT, BISHOP, ROOK, QUEEN, KING, ALL };
+		// enum { NO_PIECE = 0, PAWN = 2, KNIGHT, BISHOP, ROOK, QUEEN, KING, ALL_PIECES };
 		inline constexpr bool LUT_ISSLIDER[9] =
 		{
 			false, false, false, false, true, true, true, false, false

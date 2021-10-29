@@ -35,6 +35,37 @@ namespace anka {
         Move* pv = nullptr;
         u64 fh = C64(1);
         u64 fh_f = C64(1);
+
+        void Print(GameState& pos) const
+        {
+            char move_str[6];
+
+            printf("info depth %d time %lld nodes %" PRIu64 " nps %" PRIu64 " score ",
+                depth, total_time, total_nodes,
+                nps);
+
+            if (best_score >= UPPER_MATE_THRESHOLD) {
+                int moves_to_mate = ((ANKA_MATE - best_score) >> 1) + 1;
+                printf("mate %d pv ", moves_to_mate);
+            }
+            else if (best_score <= LOWER_MATE_THRESHOLD) {
+                int moves_to_mate = ((-ANKA_MATE - best_score) >> 1);
+                printf("mate %d pv ", moves_to_mate);
+            }
+            else {
+                printf("cp %d pv ", best_score);
+            }
+
+            for (int i = 0; i < MAX_PLY; i++) {
+                if (pv[i] == 0)
+                    break;
+                move::ToString(pv[i], move_str);
+                printf("%s ", move_str);
+            }
+
+            putchar('\n');
+            STATS(printf("Order Quality: %.2f\n", result.fh_f / (float)result.fh));
+        }
     };
 
 	class SearchInstance {

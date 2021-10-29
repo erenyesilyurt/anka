@@ -6,7 +6,7 @@ namespace anka {
 		u64 piece_keys[2][6][64]{};
 		u64 castle_keys[16]{};
 		u64 side_key{};
-		u64 ep_keys[65]{}; // includes NOSQUARE(64)
+		u64 ep_keys[65]{}; // includes NO_SQUARE(64)
 	} // namespace zobrist_keys
 
 	void InitZobristKeys(RNG& rng)
@@ -35,20 +35,18 @@ namespace anka {
 	u64 GameState::CalculateKey()
 	{
 		u64 key = C64(0);
-		
-		for (int s = 0; s < 2; s++) {
-			Bitboard colored_pieces = (s == 0 ? WhitePieces() : BlackPieces());
-			for (int t = piece_type::PAWN; t <= piece_type::KING; t++) {
-				Bitboard pieces = m_piecesBB[t] & colored_pieces;
+	
+		for (Side color = WHITE; color <= BLACK; color++) {
+			for (PieceType t = PAWN; t <= KING; t++) {
+				Bitboard pieces = m_piecesBB[t] & m_piecesBB[color];
 				while (pieces) {
 					Square sq = bitboard::BitScanForward(pieces);
-					key ^= zobrist_keys::piece_keys[s][t-2][sq];
+					key ^= zobrist_keys::piece_keys[color][t-2][sq];
 					pieces &= pieces - 1;
 				};
 			}
 		}
 
-		Square ep_square = m_ep_target;
 		if (m_side == BLACK) {
 			key ^= zobrist_keys::side_key;
 		}

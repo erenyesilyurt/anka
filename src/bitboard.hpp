@@ -57,12 +57,6 @@ namespace anka {
 			return bit_index;
 		}
 
-		//// return vertically flipped bitboard
-		//force_inline Bitboard Flip() const
-		//{
-		//	return _byteswap_uint64(bitboard);
-		//}
-
 		template<int dir>
 		force_inline Bitboard StepOne(const Bitboard bitboard)
 		{
@@ -111,7 +105,7 @@ namespace anka {
 		}
 
 		
-		inline void Print(Bitboard bitboard)
+		inline void PrintBitboard(Bitboard bitboard)
 		{
 			if (bitboard == C64(0)) {
 				printf("EMPTY BITBOARD\n");
@@ -121,11 +115,11 @@ namespace anka {
 			int board[8][8]{};
 			do {
 				Square sq = BitScanForward(bitboard);
-				board[square::GetRank(sq)][square::GetFile(sq)] = 1;
+				board[GetRank(sq)][GetFile(sq)] = 1;
 			} while (bitboard &= bitboard - 1);
 
-			for (int r = rank::EIGHT; r >= rank::ONE; r--) {
-				for (int f = file::A; f <= file::H; f++) {
+			for (int r = RANK_EIGHT; r >= RANK_ONE; r--) {
+				for (int f = FILE_A; f <= FILE_H; f++) {
 					printf("%d ", board[r][f]);
 				}
 				putchar('\n');

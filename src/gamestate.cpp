@@ -15,11 +15,11 @@ void anka::GameState::Clear()
 	}
 
 	for (int sq = 0; sq < 64; sq++) {
-		m_board[sq] = piece_type::NOPIECE;
+		m_board[sq] = NO_PIECE;
 	}
 	m_occupation = C64(0);
 
-	m_ep_target = square::NOSQUARE;
+	m_ep_target = NO_SQUARE;
 	m_castling_rights = 0;
 	m_halfmove_clock = 0;
 	m_side = NOSIDE;
@@ -98,11 +98,11 @@ bool anka::GameState::LoadPosition(std::string fen)
 		const char *p = fen_parts[3].c_str();
 		File f = *p - 'a';
 		Rank r = *(p + 1) - '1';
-		if (f > file::H|| f < file::A|| r > rank::EIGHT|| r < rank::ONE) {
+		if (f > FILE_H|| f < FILE_A|| r > RANK_EIGHT|| r < RANK_ONE) {
 			std::cerr << "AnkaError (LoadPosition): Error parsing en passant square.\n";
 			return false;
 		}
-		m_ep_target = square::RankFileToSquare(r, f);
+		m_ep_target = RankFileToSquare(r, f);
 	}
 
 	if (num_parts > 4) {
@@ -118,12 +118,12 @@ bool anka::GameState::LoadPosition(std::string fen)
 	// TODO: do more error checking here, otherwise a malformed FEN string will crash the program
 	const char* p = fen_parts[0].c_str();
 	char c;
-	int r = rank::EIGHT;
-	int f = file::A;
+	int r = RANK_EIGHT;
+	int f = FILE_A;
 	while (c = *p++) {
 		if (c == '/') {
 			r--;
-			f = file::A;
+			f = FILE_A;
 			continue;
 		}
 		else if (isdigit(c)) {
@@ -136,11 +136,11 @@ bool anka::GameState::LoadPosition(std::string fen)
 			continue;
 		}
 		else {
-			Square sq = square::RankFileToSquare(r, f);
+			Square sq = RankFileToSquare(r, f);
 			f++;
 
-			PieceType piece = piece_type::CharToPieceType(c);
-			if (piece == piece_type::NOPIECE) {
+			PieceType piece = CharToPieceType(c);
+			if (piece == NO_PIECE) {
 				std::cerr << "AnkaError (LoadPosition): Error parsing position FEN.\n";
 				return false;
 			}
@@ -194,8 +194,8 @@ anka::Move anka::GameState::ParseMove(const char* line) const
 	if (move_str[3] > '8' || move_str[3] < '1')
 		return 0;
 
-	Square from = square::RankFileToSquare(move_str[1] - '1', move_str[0] - 'a');
-	Square to = square::RankFileToSquare(move_str[3] - '1', move_str[2] - 'a');
+	Square from = RankFileToSquare(move_str[1] - '1', move_str[0] - 'a');
+	Square to = RankFileToSquare(move_str[3] - '1', move_str[2] - 'a');
 
 	ANKA_ASSERT(from >= 0 && from < 64);
 	ANKA_ASSERT(to >= 0 && to < 64);
@@ -212,16 +212,16 @@ anka::Move anka::GameState::ParseMove(const char* line) const
 					return 0;
 
 				PieceType promoted = move::PromotedPiece(move);
-				if (promoted == piece_type::ROOK && move_str[4] == 'r') {
+				if (promoted == ROOK && move_str[4] == 'r') {
 					return move;
 				}
-				else if (promoted == piece_type::BISHOP && move_str[4] == 'b') {
+				else if (promoted == BISHOP && move_str[4] == 'b') {
 					return move;
 				}
-				else if (promoted == piece_type::QUEEN && move_str[4] == 'q') {
+				else if (promoted == QUEEN && move_str[4] == 'q') {
 					return move;
 				}
-				else if (promoted == piece_type::KNIGHT && move_str[4] == 'n') {
+				else if (promoted == KNIGHT && move_str[4] == 'n') {
 					return move;
 				}
 			}
@@ -245,15 +245,15 @@ void anka::GameState::Print() const
 	}
 	constexpr char piece_chars[] = { 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-	Bitboard white_pieces = Pieces<WHITE, piece_type::ALL>();
+	Bitboard white_pieces = Pieces<WHITE, ALL_PIECES>();
 	for (int i = 2; i < 8; i++) {
 		Bitboard pieces = m_piecesBB[i];
 		char piece_char = piece_chars[i - 2];
 
 		while (pieces) {
 			Square sq = bitboard::BitScanForward(pieces);
-			Rank rank = square::GetRank(sq);
-			File file = square::GetFile(sq);
+			Rank rank = GetRank(sq);
+			File file = GetFile(sq);
 			if (bitboard::BitIsSet(white_pieces, sq)) {
 				board[rank][file] = piece_char;
 			}
@@ -266,25 +266,25 @@ void anka::GameState::Print() const
 	}
 
 	
-	for (int r = rank::EIGHT; r >= rank::ONE; r--) {
+	for (int r = RANK_EIGHT; r >= RANK_ONE; r--) {
 		printf(" %d|  ", r + 1);
-		for (int f = file::A; f <= file::H; f++) {
+		for (int f = FILE_A; f <= FILE_H; f++) {
 			printf("%c ", board[r][f]);
 		}
 		putchar('\t');
-		if (r == rank::EIGHT) {
+		if (r == RANK_EIGHT) {
 			printf("Side to move: %s\n", SideToString(SideToPlay()));
 		}
-		else if (r == rank::SEVEN) {
+		else if (r == RANK_SEVEN) {
 			printf("Half-Move Clock: %d\n", HalfMoveClock());
 		}
-		else if (r == rank::SIX) {
+		else if (r == RANK_SIX) {
 			printf("Castling Rights: %s\n", CastlingRightsToString(m_castling_rights));
 		}
-		else if (r == rank::FIVE) {
-			printf("En passant target: %s\n", square::ToString(EnPassantSquare()));
+		else if (r == RANK_FIVE) {
+			printf("En passant target: %s\n", SquareToString(EnPassantSquare()));
 		}
-		else if (r == rank::FOUR) {
+		else if (r == RANK_FOUR) {
 			printf("Zobrist key: 0x%" PRIx64 "\n", PositionKey());
 		}
 		else {
@@ -298,34 +298,34 @@ void anka::GameState::Print() const
 void anka::GameState::PrintBitboards() const
 {
 	printf("***White pieces***\n");
-	bitboard::Print(Pieces<WHITE>());
+	bitboard::PrintBitboard(Pieces<WHITE>());
 	putchar('\n');
 
 	printf("***Black pieces***\n");
-	bitboard::Print(Pieces<BLACK>());
+	bitboard::PrintBitboard(Pieces<BLACK>());
 	putchar('\n');
 
 	printf("***Pawns***\n");
-	bitboard::Print(Pieces<ALLSIDES, piece_type::PAWN>());
+	bitboard::PrintBitboard(Pieces<ALLSIDES, PAWN>());
 	putchar('\n');
 
 	printf("***Knights***\n");
-	bitboard::Print(Pieces<ALLSIDES, piece_type::KNIGHT>());
+	bitboard::PrintBitboard(Pieces<ALLSIDES, KNIGHT>());
 	putchar('\n');
 
 	printf("***Bishops***\n");
-	bitboard::Print(Pieces<ALLSIDES, piece_type::BISHOP>());
+	bitboard::PrintBitboard(Pieces<ALLSIDES, BISHOP>());
 	putchar('\n');
 
 	printf("***Rooks***\n");
-	bitboard::Print(Pieces<ALLSIDES, piece_type::ROOK>());
+	bitboard::PrintBitboard(Pieces<ALLSIDES, ROOK>());
 	putchar('\n');
 
 	printf("***Queens***\n");
-	bitboard::Print(Pieces<ALLSIDES, piece_type::QUEEN>());
+	bitboard::PrintBitboard(Pieces<ALLSIDES, QUEEN>());
 	putchar('\n');
 
 	printf("***Kings***\n");
-	bitboard::Print(Pieces<ALLSIDES, piece_type::KING>());
+	bitboard::PrintBitboard(Pieces<ALLSIDES, KING>());
 	putchar('\n');
 }

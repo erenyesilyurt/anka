@@ -6,7 +6,7 @@ namespace anka {
 	namespace attacks {
 		namespace magics {
 			struct Magic {
-				u64 mask;
+				u64 mask; // Attack mask. Doesn't include outer squares.
 				u64 magic_factor;
 				int table_offset;
 			};
@@ -159,38 +159,41 @@ namespace anka {
 		extern Bitboard _in_between[64][64];
 
 		void InitAttacks();
-		Bitboard RookAttacksSlow(Square sq, Bitboard relevant_occ);
-		Bitboard BishopAttacksSlow(Square sq, Bitboard relevant_occ);
+		Bitboard RookAttacksSlow(Square square, Bitboard relevant_occ);
+		Bitboard BishopAttacksSlow(Square square, Bitboard relevant_occ);
 
+
+		// Front spawn of a pawn on 'square', includes adjacent files. 'color' determines which way is front
+		force_inline Bitboard PawnFrontSpan(Square square, Side color)
+		{
+			return _pawn_front_spans[color][square];
+		}
+
+		// TODO: one of the PawnAttacks functions is probably redundant
+		// return pawn attacks from 'square' for given side
 		template <int side>
-		force_inline Bitboard PawnAttacks(Square sq)
+		force_inline Bitboard PawnAttacks(Square square)
 		{
-			return _pawn_attacks[side][sq];
+			return _pawn_attacks[side][square];
+		}
+		force_inline Bitboard PawnAttacks(Square square, Side attacking_side)
+		{
+			return _pawn_attacks[attacking_side][square];
 		}
 
-		force_inline Bitboard PawnAttacks(Square sq, Side attacking_side)
+		// return knight attacks from 'square'
+		force_inline Bitboard KnightAttacks(Square square)
 		{
-			return _pawn_attacks[attacking_side][sq];
+			return _knight_attacks[square];
 		}
 
-		// Front spawn of a pawn on sq, includes adjacent files
-		force_inline Bitboard PawnFrontSpan(Square sq, Side color)
+		// return king attacks from 'square'
+		force_inline Bitboard KingAttacks(Square square)
 		{
-			return _pawn_front_spans[color][sq];
+			return _king_attacks[square];
 		}
 
-		// returns the attack map for a knight on the given square
-		force_inline Bitboard KnightAttacks(Square sq)
-		{
-			return _knight_attacks[sq];
-		}
-
-		// returns the attack map for a king on the given square
-		force_inline Bitboard KingAttacks(Square sq)
-		{
-			return _king_attacks[sq];
-		}
-
+		// return bishop attacks from 'square' given occupied board squares
 		force_inline Bitboard BishopAttacks(Square square, u64 occupancy)
 		{
 			occupancy &= magics::bishop_magics[square].mask;
@@ -199,6 +202,7 @@ namespace anka {
 			return _slider_attacks[magics::bishop_magics[square].table_offset + occupancy];
 		}
 
+		// return rook attacks from 'square' given occupied board squares
 		force_inline Bitboard RookAttacks(Square square, u64 occupancy)
 		{
 			occupancy &= magics::rook_magics[square].mask;
@@ -207,16 +211,19 @@ namespace anka {
 			return _slider_attacks[magics::rook_magics[square].table_offset + occupancy];
 		}
 
+		// return queen attacks from 'square' given occupied board squares
 		force_inline Bitboard QueenAttacks(Square square, u64 occupancy)
 		{
 			return BishopAttacks(square, occupancy) | RookAttacks(square, occupancy);
 		}
 
+		// return files adjacent to 'file'
 		force_inline Bitboard AdjacentFiles(File file)
 		{
 			return _adjacent_files[file];
 		}
 
+		// return squares in between 'from' and 'to'
 		force_inline Bitboard InBetween(Square from, Square to)
 		{
 			return _in_between[from][to];

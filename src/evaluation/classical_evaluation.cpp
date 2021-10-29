@@ -8,14 +8,13 @@ namespace anka {
 		// Phase calculation piece weights for tapered eval.
 		// Implementation is based on chessprogramming.org/Tapered_Eval
 		constexpr int p_phase[8] = { 0, 0, 0, 1, 1, 2, 4, 0 };
-		constexpr int MAX_PHASE = p_phase[piece_type::PAWN] * 16 + p_phase[piece_type::KNIGHT] * 4
-			+ p_phase[piece_type::BISHOP] * 4 + p_phase[piece_type::ROOK] * 4
-			+ p_phase[piece_type::QUEEN] * 2;
+		constexpr int MAX_PHASE = p_phase[PAWN] * 16 + p_phase[KNIGHT] * 4
+			+ p_phase[BISHOP] * 4 + p_phase[ROOK] * 4
+			+ p_phase[QUEEN] * 2;
 
 
 		EvalScore PieceMobility(PieceType piece, Square sq, Bitboard occupation, Bitboard ally_occupation)
 		{
-			using namespace piece_type;
 			EvalScore score;
 			Bitboard att = 0;
 			Bitboard legal_squares = ~ally_occupation; // pseudo legal. empty and opponent squares
@@ -47,7 +46,6 @@ namespace anka {
 		template<Side color>
 		void EvaluatePawns(const GameState& pos)
 		{
-			using namespace piece_type;
 			constexpr Side opposite_color = color ^ 1;
 			Bitboard ally_pawns = pos.Pieces<color, PAWN>();
 			Bitboard opponent_pawns = pos.Pieces<opposite_color, PAWN>();
@@ -63,7 +61,7 @@ namespace anka {
 
 				//// check if passed pawn
 				if ((attacks::PawnFrontSpan(sq, color) & opponent_pawns) == 0) {
-					int rank = square::GetRank(sq);
+					int rank = GetRank(sq);
 					if constexpr (color == BLACK)
 						rank = 7 - rank;
 					g_eval_data.pawn_structure[MIDGAME][color] += g_eval_params.passed_bonus[MIDGAME][rank];
@@ -72,7 +70,7 @@ namespace anka {
 				}
 
 				//// check if isolated pawn
-				int file = square::GetFile(sq);
+				int file = GetFile(sq);
 				if ((attacks::AdjacentFiles(file) & ally_pawns) == 0) {
 					g_eval_data.pawn_structure[MIDGAME][color] -= g_eval_params.isolated_penalty[MIDGAME][file];
 					g_eval_data.pawn_structure[ENDGAME][color] -= g_eval_params.isolated_penalty[ENDGAME][file];
@@ -86,7 +84,6 @@ namespace anka {
 		template<Side color>
 		int EvaluatePieces(const GameState& pos)
 		{
-			using namespace piece_type;
 
 			int phase_change = 0;
 			Bitboard pieces = pos.Pieces<color>() ^ pos.Pieces<color, PAWN>();
@@ -117,7 +114,6 @@ namespace anka {
 	// Returns a score in centipawns.
     int GameState::ClassicalEvaluation() const
     {
-		using namespace piece_type;
 		g_eval_data = {};
 
 		int phase = MAX_PHASE;
@@ -133,8 +129,8 @@ namespace anka {
 		}	
 
 		// bishop pair bonus
-		int num_white_bishops = bitboard::PopCount(Pieces<WHITE, piece_type::BISHOP>());
-		int num_black_bishops = bitboard::PopCount(Pieces<BLACK, piece_type::BISHOP>());
+		int num_white_bishops = bitboard::PopCount(Pieces<WHITE, BISHOP>());
+		int num_black_bishops = bitboard::PopCount(Pieces<BLACK, BISHOP>());
 
 		if (num_white_bishops > 1) {
 			g_eval_data.bishop_pair[MIDGAME][WHITE] += g_eval_params.bishop_pair_bonus[MIDGAME];

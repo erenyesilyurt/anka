@@ -33,27 +33,27 @@ namespace anka {
 		UpdateKeyWithEnPassant();
 		UpdateKeyWithCastle();
 
-		m_ep_target = square::NOSQUARE;
+		m_ep_target = NO_SQUARE;
 
 		Square from = move::FromSquare(move);
 		Square to = move::ToSquare(move);
-		Rank to_sq_rank = square::GetRank(to);
-		File from_sq_file = square::GetFile(from);
-		File to_sq_file = square::GetFile(to);
+		Rank to_sq_rank = GetRank(to);
+		File from_sq_file = GetFile(from);
+		File to_sq_file = GetFile(to);
 		u64 from_bb = C64(1) << from;
 		u64 to_bb = C64(1) << to;
 		u64 fromto_bb = from_bb | to_bb;
 		PieceType moving_piece = move::MovingPiece(move);
 
 		m_piecesBB[m_side] ^= fromto_bb;
-		m_board[from] = piece_type::NOPIECE;
+		m_board[from] = NO_PIECE;
 
 		// remove moving_piece hash from key
 		UpdateKeyWithPiece(moving_piece, m_side, from);
 
 		if (move::IsPromotion(move)) {
 			PieceType promoted_piece = move::PromotedPiece(move);
-			ANKA_ASSERT(moving_piece == piece_type::PAWN);
+			ANKA_ASSERT(moving_piece == PAWN);
 			// clear 'from' piece
 			m_piecesBB[moving_piece] ^= from_bb;
 			// add promoted piece
@@ -76,10 +76,10 @@ namespace anka {
 				Square cap_piece_sq = to - push_dir;
 				Bitboard cap_piece_bb = C64(1) << cap_piece_sq;
 				m_piecesBB[opposite_side] ^= cap_piece_bb;
-				m_piecesBB[piece_type::PAWN] ^= cap_piece_bb;
-				m_board[cap_piece_sq] = piece_type::NOPIECE;
+				m_piecesBB[PAWN] ^= cap_piece_bb;
+				m_board[cap_piece_sq] = NO_PIECE;
 				// remove captured pawn hash
-				UpdateKeyWithPiece(piece_type::PAWN, opposite_side, cap_piece_sq);
+				UpdateKeyWithPiece(PAWN, opposite_side, cap_piece_sq);
 			}
 			else {
 				PieceType captured_piece = move::CapturedPiece(move);
@@ -90,12 +90,12 @@ namespace anka {
 			}
 		}
 		else if (move::IsCastle(move)) {
-			Square rook_from = square::H1;
-			Square rook_to = square::F1;
-			if (to_sq_file == file::C) {
+			Square rook_from = H1;
+			Square rook_to = F1;
+			if (to_sq_file == FILE_C) {
 				// queen side castle
-				rook_from = square::A1;
-				rook_to = square::D1;
+				rook_from = A1;
+				rook_to = D1;
 			}
 
 			rook_from ^=  flip_mask; // flip to rank 8 if black
@@ -104,13 +104,13 @@ namespace anka {
 			Bitboard rook_fromto_bb = (C64(1) << rook_from) | (C64(1) << rook_to);
 
 			m_piecesBB[m_side] ^= rook_fromto_bb;
-			m_piecesBB[piece_type::ROOK] ^= rook_fromto_bb;
+			m_piecesBB[ROOK] ^= rook_fromto_bb;
 
-			m_board[rook_from] = piece_type::NOPIECE;
-			m_board[rook_to] = piece_type::ROOK;
+			m_board[rook_from] = NO_PIECE;
+			m_board[rook_to] = ROOK;
 
-			UpdateKeyWithPiece(piece_type::ROOK, m_side, rook_from);
-			UpdateKeyWithPiece(piece_type::ROOK, m_side, rook_to);
+			UpdateKeyWithPiece(ROOK, m_side, rook_from);
+			UpdateKeyWithPiece(ROOK, m_side, rook_to);
 
 		}
 		else if (move::IsDoublePawnPush(move)) {
@@ -162,7 +162,7 @@ namespace anka {
 
 		Square from = move::FromSquare(move);
 		Square to = move::ToSquare(move);
-		File to_sq_file = square::GetFile(to);
+		File to_sq_file = GetFile(to);
 		u64 from_bb = C64(1) << from;
 		u64 to_bb = C64(1) << to;
 		u64 fromto_bb = from_bb | to_bb;
@@ -171,7 +171,7 @@ namespace anka {
 
 		m_piecesBB[m_side] ^= fromto_bb;
 		m_board[from] = moving_piece;
-		m_board[to] = piece_type::NOPIECE;
+		m_board[to] = NO_PIECE;
 
 		// add from_piece hash to the key
 		UpdateKeyWithPiece(moving_piece, m_side, from);
@@ -198,10 +198,10 @@ namespace anka {
 				Square cap_piece_sq = to - push_dir;
 				Bitboard cap_piece_bb = C64(1) << cap_piece_sq;
 				m_piecesBB[opposite_side] ^= cap_piece_bb;
-				m_piecesBB[piece_type::PAWN] ^= cap_piece_bb;
-				m_board[cap_piece_sq] = piece_type::PAWN;
+				m_piecesBB[PAWN] ^= cap_piece_bb;
+				m_board[cap_piece_sq] = PAWN;
 				// restore captured pawn hash
-				UpdateKeyWithPiece(piece_type::PAWN, opposite_side, cap_piece_sq);
+				UpdateKeyWithPiece(PAWN, opposite_side, cap_piece_sq);
 			}
 			else {
 				PieceType captured_piece = move::CapturedPiece(move);
@@ -213,12 +213,12 @@ namespace anka {
 			}
 		}
 		else if (move::IsCastle(move)) {
-			Square rook_from = square::H1;
-			Square rook_to = square::F1;
-			if (to_sq_file == file::C) {
+			Square rook_from = H1;
+			Square rook_to = F1;
+			if (to_sq_file == FILE_C) {
 				// queen side castle
-				rook_from = square::A1;
-				rook_to = square::D1;
+				rook_from = A1;
+				rook_to = D1;
 			}
 
 			rook_from ^= flip_mask; // flip to rank 8 if black
@@ -226,13 +226,13 @@ namespace anka {
 			Bitboard rook_fromto_bb = (C64(1) << rook_from) | (C64(1) << rook_to);
 
 			m_piecesBB[m_side] ^= rook_fromto_bb;
-			m_piecesBB[piece_type::ROOK] ^= rook_fromto_bb;
+			m_piecesBB[ROOK] ^= rook_fromto_bb;
 
-			m_board[rook_from] = piece_type::ROOK;
-			m_board[rook_to] = piece_type::NOPIECE;
+			m_board[rook_from] = ROOK;
+			m_board[rook_to] = NO_PIECE;
 
-			UpdateKeyWithPiece(piece_type::ROOK, m_side, rook_from);
-			UpdateKeyWithPiece(piece_type::ROOK, m_side, rook_to);
+			UpdateKeyWithPiece(ROOK, m_side, rook_from);
+			UpdateKeyWithPiece(ROOK, m_side, rook_to);
 
 		}
 
@@ -248,7 +248,7 @@ namespace anka {
 		m_state_history[m_ply].move_made = move::NULL_MOVE;
 
 		UpdateKeyWithEnPassant();
-		m_ep_target = square::NOSQUARE;
+		m_ep_target = NO_SQUARE;
 		m_halfmove_clock = 0; // TODO: increment the old value and change the repetition detection code?
 		m_side = m_side ^ 1;
 		UpdateKeyWithEnPassant();

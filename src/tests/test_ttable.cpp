@@ -2,6 +2,15 @@
 //#include "rng.hpp"
 //#include "hash.hpp"
 //#include "attacks.hpp"
+//#include "evaluation.hpp"
+//#include "ttable.hpp"
+//
+//namespace anka {
+//	// Global structures
+//	TranspositionTable g_trans_table;
+//	EvalParams g_eval_params;
+//	EvalData g_eval_data;
+//}
 //
 //int main()
 //{
