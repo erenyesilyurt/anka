@@ -24,7 +24,7 @@ namespace anka {
 	public:
 		GameState() : m_piecesBB{}, m_occupation{}, m_board{}, m_ep_target{ NO_SQUARE },
 			m_side{ WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
-			m_zobrist_key{}, m_ply{}, m_state_history{}
+			m_zobrist_key{}, m_root_ply{}, m_state_history{}
 		{
 			#ifndef EVAL_TUNING
 			m_state_history = new PositionRecord[kStateHistoryMaxSize];
@@ -142,16 +142,18 @@ namespace anka {
 			return false;
 		}
 
-		// TODO: test this
-		inline bool IsDrawn() const {
+
+		inline bool IsDrawn() const 
+		{
 			// 50-move rule
 			if (m_halfmove_clock > 99) {
 				return true;
-			}
-			
-			int ply_limit = Max(m_ply - m_halfmove_clock, 0);
+			}		
+
+			int ply_limit = Max(m_root_ply - m_halfmove_clock, 0);
+
 			// repetition
-			for (int ply = m_ply - 2; ply >= ply_limit; ply-=2) {
+			for (int ply = m_root_ply - 4; ply >= ply_limit; ply-=2) {
 				if (m_zobrist_key == m_state_history[ply].zobrist_key) {
 					return true;
 				}
@@ -165,8 +167,7 @@ namespace anka {
 		force_inline int HalfMoveClock() const { return m_halfmove_clock; }
 		force_inline byte CastlingRights() const { return m_castling_rights; }
 		force_inline u64 PositionKey() const { return m_zobrist_key; }
-		force_inline int Ply() const { return m_ply; }
-		force_inline void SetPly(int ply) { m_ply = ply; }
+		force_inline int RootPly() const { return m_root_ply; }
 
 
 		u64 CalculateKey();
@@ -231,7 +232,7 @@ namespace anka {
 		int m_halfmove_clock;
 		byte m_castling_rights;
 		u64 m_zobrist_key;
-		int m_ply; // 0 at the root of the state history (not always the root of the search tree)
+		int m_root_ply; // 0 at the root of the state history (not always the root of the search tree)
 		PositionRecord *m_state_history;
 
 	};
