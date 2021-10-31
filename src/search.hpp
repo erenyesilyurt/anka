@@ -8,9 +8,7 @@
 
 
 namespace anka {
-
-    inline constexpr int num_killers_per_slot = 2;
-    inline Move KillerMoves[MAX_PLY][num_killers_per_slot];
+    inline Move KillerMoves[MAX_PLY][2];
 
     force_inline void SetKillerMove(Move m, int ply)
     {
@@ -22,6 +20,14 @@ namespace anka {
         if (KillerMoves[ply][0] != m) {
             KillerMoves[ply][1] = KillerMoves[ply][0];
             KillerMoves[ply][0] = m;
+        }
+    }
+
+    force_inline void ClearKillerMoves()
+    {
+        for (int i = 0; i < MAX_PLY; i++) {
+            KillerMoves[i][0] = move::NO_MOVE;
+            KillerMoves[i][1] = move::NO_MOVE;
         }
     }
 
@@ -64,7 +70,30 @@ namespace anka {
             }
 
             putchar('\n');
-            STATS(printf("Order Quality: %.2f\n", result.fh_f / (float)result.fh));
+            STATS(printf("Order Quality: %.2f\n", fh_f / (float)fh));
+        }
+    };
+
+    struct SearchParams {
+        bool infinite = false;
+        long long start_time = 0;
+        long long remaining_time = 0;
+        int depth_limit = 0;
+
+        bool check_timeup = false;
+        std::atomic<bool> uci_stop_flag = false;
+        std::atomic<bool> is_searching = false;
+
+        void Clear()
+        {
+            infinite = false;
+            start_time = 0;
+            remaining_time = 0;
+            depth_limit = 0;
+
+            check_timeup = false;
+            uci_stop_flag = false;
+            is_searching = false;
         }
     };
 
@@ -75,15 +104,13 @@ namespace anka {
         u64 num_fail_high_first = C64(1);
         long long last_timecheck = 0;
 	public:
-        int Quiescence(GameState& pos, int alpha, int beta, int depth, int ply, SearchParams& params);
+        int Quiescence(GameState& pos, int alpha, int beta, int ply, SearchParams& params);
         template <bool pruning = true>
-        int PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params);
+        int PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, bool null_pruning, SearchParams& params);
     private:
         void CheckTime(SearchParams& params);
 	}; // SearchInstance
 
 
-
-
-    void IterativeDeepening(GameState& root_pos, SearchParams& params);
+    void StartSearch(GameState& root_pos, SearchParams& params);
 }

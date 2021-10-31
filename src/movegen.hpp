@@ -53,6 +53,36 @@ namespace anka {
 			return result;
 		}
 
+		Move PopBest(Move hash_move, Move killer_1, Move killer_2)
+		{
+			int best_index = 0;
+			int best_score = moves[0].score;
+
+			for (int i = 0; i < length; i++) {
+				if (moves[i].move == hash_move) {
+					moves[i].score = move::HASH_MOVE_SCORE;
+				}
+				else if ((moves[i].move == killer_1) || (moves[i].move == killer_2))
+				{
+					moves[i].score = move::KILLER_SCORE;
+				}
+
+				if (moves[i].score > best_score) {
+					best_score = moves[i].score;
+					best_index = i;
+				}
+			}
+
+			Move result = moves[best_index].move;
+			// Pop the best move
+			GradedMove tmp = moves[best_index];
+			moves[best_index] = moves[length - 1];
+			moves[length - 1] = tmp;
+			length--;
+
+			return result;
+		}
+
 		void PrintMoves() const;
 
 		force_inline bool Find(Move m) const

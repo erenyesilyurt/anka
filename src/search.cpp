@@ -8,13 +8,7 @@ namespace anka {
     static Move principal_variation[MAX_PLY * MAX_PLY]{};
     
     static constexpr int nodes_per_time_check = 8191;
-    static constexpr int R_null = 2;
-
-    static bool NullOk(GameState &pos)
-    {
-        //return pos.TotalMaterial() > 1200 ? true : false;
-        return true;
-    }
+    static constexpr int R_null = 4;
 
     // returns true if there are no illegal moves in pv
     static bool ValidatePV(GameState& pos, const Move* pv)
@@ -55,13 +49,12 @@ namespace anka {
                 params.uci_stop_flag = true;
     }
 
-    void IterativeDeepening(GameState& pos, SearchParams& params)
+    void StartSearch(GameState& pos, SearchParams& params)
     {
-        params.start_time = Timer::GetTimeInMs();
-        params.is_searching = true;
-
+        ClearKillerMoves();
         for (int i = 0; i < MAX_PLY * MAX_PLY; i++)
             principal_variation[i] = 0;
+        
 
         bool skip_search = false;
         char best_move_str[6];
@@ -93,7 +86,7 @@ namespace anka {
                 SearchInstance instance;
                 instance.last_timecheck = params.start_time;
 
-                int best_score = instance.PVS(pos, -ANKA_INFINITE, ANKA_INFINITE, d, 0, true, params);
+                int best_score = instance.PVS(pos, -ANKA_INFINITE, ANKA_INFINITE, d, 0, true, true, params);
                 auto end_time = Timer::GetTimeInMs();
 
                 if (params.uci_stop_flag) {
@@ -115,14 +108,11 @@ namespace anka {
 
 
                 result.Print(pos);
-                //ValidatePV(pos, principal_variation);
+                ANKA_ASSERT(ValidatePV(pos, principal_variation));
             }
 
             // don't stop the search in infinite search mode unless a stop command is received
-            while (params.infinite && !params.uci_stop_flag) {
-
-            }
-
+            while (params.infinite && !params.uci_stop_flag);
         }
 
         if (best_move > 0) {
@@ -137,10 +127,11 @@ namespace anka {
         }
         printf("bestmove %s\n", best_move_str);
         STATS(g_trans_table.PrintStatistics());
+
         params.is_searching = false;
     }
 
-    int SearchInstance::Quiescence(GameState& pos, int alpha, int beta, int depth, int ply, SearchParams& params)
+    int SearchInstance::Quiescence(GameState& pos, int alpha, int beta, int ply, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
         if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
@@ -161,9 +152,9 @@ namespace anka {
         }
         else {
             move_list.GenerateLegalCaptures(pos);
+
             // stand pat
             int eval = pos.ClassicalEvaluation();
-
             if (eval > alpha) {
                 if (eval >= beta) {
                     return eval;
@@ -177,7 +168,7 @@ namespace anka {
             Move move = move_list.PopBest();
             nodes_visited++;
             pos.MakeMove(move);
-            int score = -Quiescence(pos, -beta, -alpha, depth - 1, ply + 1, params);
+            int score = -Quiescence(pos, -beta, -alpha, ply + 1, params);
             pos.UndoMove();
 
             if (params.uci_stop_flag)
@@ -196,7 +187,7 @@ namespace anka {
     }
 
     template<bool pruning>
-    int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, SearchParams& params)
+    int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, bool null_pruning, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
         if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
@@ -215,35 +206,36 @@ namespace anka {
         }
 
 
-
         if (pos.IsDrawn()) {
             return 0;
         }
 
-        if (depth == 0 || ply >= MAX_PLY)
-            return Quiescence(pos, alpha, beta, depth, ply, params);
+        if (depth <= 0 || ply >= MAX_PLY)
+            return Quiescence(pos, alpha, beta, ply, params);
 
         u64 pos_key = pos.PositionKey();
         TTRecord probe_result;
         Move hash_move = 0;
+        
         if (g_trans_table.Get(pos_key, probe_result, ply)) {
-            hash_move = probe_result.move;
+            hash_move = probe_result.move;      
+            auto node_type = probe_result.GetNodeType();
             if (!is_pv && probe_result.depth >= depth) {
-                switch (probe_result.GetNodeType()) {
-                case anka::NodeType::EXACT: {
+                switch (node_type) {
+                case NodeType::EXACT: {
                     return probe_result.value;
                 }
-                case anka::NodeType::UPPERBOUND: {
+                case NodeType::UPPERBOUND: {
                     if (alpha > probe_result.value)
                         return probe_result.value;
                     break;
                 }
-                case anka::NodeType::LOWERBOUND: {
+                case NodeType::LOWERBOUND: {
                     if (probe_result.value >= beta)
                         return probe_result.value;
                     break;
                 }
-                }
+                } // end of switch
             }
         }
 
@@ -261,34 +253,30 @@ namespace anka {
 
         if constexpr (pruning) {
             if (!in_check && !is_pv) {
-                // Null move pruning
-                if (depth >= R_null && NullOk(pos)) {
+                // Null move reductions
+                if (null_pruning &&
+                    pos.AllyNonPawnPieces() > 0)
+                {
                     pos.MakeNullMove();
-                    int score = -PVS<false>(pos, -beta, -beta+1, depth - R_null, ply + 1, false, params);
+                    int score = -PVS(pos, -beta, -beta+1, depth - R_null, ply + 1, false, false, params);
                     pos.UndoNullMove();
-                    if (score >= beta)
-                        return score;
-                }
-            }
-        }
 
-        int killer_move_1 = KillerMoves[ply][0];
-        int killer_move_2 = KillerMoves[ply][1];
-        for (int j = 0; j < list.length; j++) {
-            if (list.moves[j].move == hash_move) {
-                list.moves[j].score = move::PV_SCORE;
-            }
-            else if ((list.moves[j].move == killer_move_1) || (list.moves[j].move == killer_move_2)) {
-                list.moves[j].score = move::KILLER_SCORE;
+                    if (score >= beta) {
+                        int R = depth > 6 ? 4 : 3;
+                        depth -= R;
+                        if (depth <= 0)
+                            return Quiescence(pos, alpha, beta, ply, params);
+                    }
+                }
             }
         }
 
 
         // First move
-        Move best_move = list.PopBest();
+        Move best_move = list.PopBest(hash_move, KillerMoves[ply][0], KillerMoves[ply][1]);
         nodes_visited++;
         pos.MakeMove(best_move);
-        int best_score = -PVS(pos, -beta, -alpha, depth - 1, ply + 1, is_pv, params);
+        int best_score = -PVS(pos, -beta, -alpha, depth - 1, ply + 1, is_pv, true, params);
         pos.UndoMove();
 
         if (best_score > alpha) {
@@ -316,9 +304,9 @@ namespace anka {
             Move move = list.PopBest();
             nodes_visited++;
             pos.MakeMove(move);
-            int score = -PVS(pos, -alpha - 1, -alpha, depth - 1, ply + 1, false, params); // zero window
+            int score = -PVS(pos, -alpha - 1, -alpha, depth - 1, ply + 1, false, true, params); // zero window
             if (score > alpha && score < beta) { // always false in zero-window
-                score = -PVS(pos, -beta, -alpha, depth - 1, ply + 1, true, params);
+                score = -PVS(pos, -beta, -alpha, depth - 1, ply + 1, true, true, params);
                 if (score > alpha) {
                     ANKA_ASSERT(is_pv);
                     alpha = score;

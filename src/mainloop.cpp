@@ -58,7 +58,6 @@ namespace anka {
 			}
 			else if (strncmp(line, "quit", 4) == 0) {
 				search_params.uci_stop_flag = true;
-				search_params.uci_quit_flag = true;
 				if (future.valid())
 					future.get();
 				break;
@@ -71,6 +70,9 @@ namespace anka {
 					}
 					OnIsReady();
 				}
+				else {
+					fprintf(stderr, "Received command while searching: %s\n", line);
+				}
 			}
 			else {
 				if (strncmp(line, "isready", 7) == 0) {
@@ -79,7 +81,8 @@ namespace anka {
 				else if (strncmp(line, "go", 2) == 0) {
 					line += 2;
 					OnGo(root_pos, line, search_params);
-					future = std::async(std::launch::async, IterativeDeepening, std::ref(root_pos), std::ref(search_params));				
+					search_params.is_searching = true;
+					future = std::async(std::launch::async, StartSearch, std::ref(root_pos), std::ref(search_params));
 				}
 				else if (strncmp(line, "position ", 9) == 0) {
 					line += 9;
@@ -140,7 +143,7 @@ namespace anka {
 
 				options.hash_size = size;
 				if (!g_trans_table.Init(options.hash_size)) {
-					printf("AnkaError(MainLoop): Failed to initialize transposition table\n");
+					fprintf(stderr, "AnkaError(MainLoop): Failed to initialize transposition table\n");
 				}
 			}
 		}
@@ -185,7 +188,6 @@ namespace anka {
 	{
 		params.Clear();
 		params.start_time = Timer::GetTimeInMs();
-		params.is_searching = true;
 		int movestogo = 0;
 		int wtime = 0;
 		int btime = 0;

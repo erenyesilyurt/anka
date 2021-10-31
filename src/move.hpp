@@ -34,7 +34,7 @@ namespace anka {
 		inline constexpr int QUIET_SCORE = 0;
 		inline constexpr int CASTLE_SCORE = 100;
 		inline constexpr int PROMOTION_SCORE = 210;
-		inline constexpr int PV_SCORE = 25000;
+		inline constexpr int HASH_MOVE_SCORE = 25000;
 		inline constexpr int KILLER_SCORE = 195;
 
 		inline constexpr int MVVLVA_CAPTURE_SCORES[8][8] = { // [attacker][victim]

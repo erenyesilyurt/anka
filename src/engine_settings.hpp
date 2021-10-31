@@ -20,31 +20,4 @@ namespace anka {
 	inline constexpr int LOWER_MATE_THRESHOLD = -ANKA_MATE + 383;
 	inline constexpr int UPPER_MATE_THRESHOLD = ANKA_MATE - 383;
 	inline constexpr int MAX_PLY = 128;
-
-	struct SearchParams {
-		bool infinite = false;
-		bool is_searching = false;
-		long long start_time = 0;
-		long long remaining_time = 0;
-		int depth_limit = 0;
-
-		bool check_timeup = false;
-		bool uci_stop_flag = false;
-		bool uci_quit_flag = false;
-
-		void Clear()
-		{
-			infinite = false;
-			is_searching = false;
-			start_time = 0;
-			remaining_time = 0;
-			depth_limit = 0;
-
-			check_timeup = false;
-			uci_stop_flag = false;
-			uci_quit_flag = false;
-		}
-	};
-
-	
 }

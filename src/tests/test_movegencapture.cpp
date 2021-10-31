@@ -75,12 +75,12 @@
 //	GameState pos;
 //
 //	pos.LoadPosition("3N1k2/3q2bp/1p2p3/4P1Q1/8/1PP3P1/5P1P/6K1 w - - 1 33");
-//	Test(pos, 6);
+//	Test(pos, 5);
 //	printf("SUCCESS: 3N1k2/3q2bp/1p2p3/4P1Q1/8/1PP3P1/5P1P/6K1 w - - 1 33\n");
 //
 //
 //	pos.LoadPosition("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-//	Test(pos, 5);
+//	Test(pos, 4);
 //	printf("SUCCESS: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -\n");
 //
 //

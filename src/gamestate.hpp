@@ -84,6 +84,11 @@ namespace anka {
 		{
 			return m_piecesBB[KNIGHT] | m_piecesBB[BISHOP];
 		}
+		force_inline Bitboard AllyNonPawnPieces() const
+		{
+			return m_piecesBB[m_side] & (MinorPieces() | MajorPieces());
+		}
+
 
 		force_inline PieceType GetPiece(Square square) const { return m_board[square]; }
 
