@@ -27,7 +27,7 @@ namespace {
 		available_time -= EngineSettings::MOVE_OVERHEAD;
 
 		if (movestogo <= 0) {
-			movestogo = 30;
+			movestogo = 20;
 		}
 		return (available_time / movestogo);
 	}

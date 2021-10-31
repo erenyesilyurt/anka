@@ -218,7 +218,7 @@ namespace anka {
         Move hash_move = 0;
         
         if (g_trans_table.Get(pos_key, probe_result, ply)) {
-            hash_move = probe_result.move;      
+            hash_move = probe_result.move;
             auto node_type = probe_result.GetNodeType();
             if (!is_pv && probe_result.depth >= depth) {
                 switch (node_type) {
@@ -239,6 +239,8 @@ namespace anka {
             }
         }
 
+        int eval = pos.ClassicalEvaluation();
+
         MoveList<256> list;
         bool in_check = list.GenerateLegalMoves(pos);
 
@@ -253,19 +255,25 @@ namespace anka {
 
         if constexpr (pruning) {
             if (!in_check && !is_pv) {
-                // Null move reductions
-                if (null_pruning &&
-                    pos.AllyNonPawnPieces() > 0)
-                {
-                    pos.MakeNullMove();
-                    int score = -PVS(pos, -beta, -beta+1, depth - R_null, ply + 1, false, false, params);
-                    pos.UndoNullMove();
+                if (pos.AllyNonPawnPieces() > 0) {
+                    // Static Null Move Pruning (Reverse Futility)
+                    int margin = 75 * depth;
+                    if (depth < 7 && eval - beta >= margin) {
+                        return eval;
+                    }
 
-                    if (score >= beta) {
-                        int R = depth > 6 ? 4 : 3;
-                        depth -= R;
-                        if (depth <= 0)
-                            return Quiescence(pos, alpha, beta, ply, params);
+                    // Null move reductions
+                    if (null_pruning && eval >= beta) {
+                        pos.MakeNullMove();
+                        int score = -PVS(pos, -beta, -beta + 1, depth - R_null, ply + 1, false, false, params);
+                        pos.UndoNullMove();
+
+                        if (score >= beta) {
+                            int R = depth > 6 ? 4 : 3;
+                            depth -= R;
+                            if (depth <= 0)
+                                return Quiescence(pos, alpha, beta, ply, params);
+                        }
                     }
                 }
             }
