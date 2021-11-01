@@ -53,18 +53,23 @@ namespace anka {
 			return result;
 		}
 
-		Move PopBest(Move hash_move, Move killer_1, Move killer_2)
+		Move PopBest(Move hash_move, Move killer_1, Move killer_2, Side side_to_move)
 		{
 			int best_index = 0;
 			int best_score = moves[0].score;
 
 			for (int i = 0; i < length; i++) {
-				if (moves[i].move == hash_move) {
+				Move m = moves[i].move;
+				if (m == hash_move) {
 					moves[i].score = move::HASH_MOVE_SCORE;
 				}
-				else if ((moves[i].move == killer_1) || (moves[i].move == killer_2))
+				else if ((m == killer_1) || (m == killer_2))
 				{
 					moves[i].score = move::KILLER_SCORE;
+				}
+				else {
+					if (move::IsQuiet(m))
+						moves[i].score += history_table.history[side_to_move][move::FromSquare(m)][move::ToSquare(m)];
 				}
 
 				if (moves[i].score > best_score) {
@@ -373,7 +378,7 @@ namespace anka {
 
 				move::SetPromotionBit(m);
 				moves[length].move = m;
-				moves[length].score = move::PROMOTION_SCORE;
+				moves[length].score = move::QUIET_SCORE;
 				++length;
 				ANKA_ASSERT(move::Validate(m, from, to, PAWN,1,0,0,0,0,0,prom_piece));
 			}
@@ -397,7 +402,7 @@ namespace anka {
 				move::SetCaptureBit(m);
 
 				moves[length].move = m;
-				moves[length].score = move::MVVLVA_CAPTURE_SCORES[PAWN][captured_piece] + move::PROMOTION_SCORE;
+				moves[length].score = move::CAPTURE_SCORE + move::MVVLVA[PAWN][captured_piece];
 				++length;
 				ANKA_ASSERT(move::Validate(m, from, to, PAWN, 1, 1, 0, 0, 0, captured_piece, prom_piece));
 			}
@@ -419,7 +424,7 @@ namespace anka {
 			move::SetCaptureBit(m);
 
 			moves[length].move = m;
-			moves[length].score = move::MVVLVA_CAPTURE_SCORES[moving_piece][captured_piece];
+			moves[length].score = move::CAPTURE_SCORE + move::MVVLVA[moving_piece][captured_piece];
 			++length;
 
 			ANKA_ASSERT(move::Validate(m, from, to, moving_piece, 0, 1, 0, 0, 0, captured_piece, 0));
@@ -440,7 +445,7 @@ namespace anka {
 			move::SetEpCaptureBit(m);
 
 			moves[length].move = m;
-			moves[length].score = move::MVVLVA_CAPTURE_SCORES[PAWN][PAWN];
+			moves[length].score = move::CAPTURE_SCORE + move::MVVLVA[PAWN][PAWN];
 			++length;
 
 			ANKA_ASSERT(move::Validate(m, from, to, PAWN, 0, 1, 0, 0, 1, PAWN, 0));
@@ -476,7 +481,7 @@ namespace anka {
 			move::SetCastleBit(m);
 
 			moves[length].move = m;
-			moves[length].score = move::CASTLE_SCORE;
+			moves[length].score = move::QUIET_SCORE;
 			++length;
 
 			ANKA_ASSERT(move::Validate(m, from, to, KING,0,0,1));

@@ -10,7 +10,7 @@ namespace anka {
 		static constexpr int MIN_HASH_SIZE = 1;
 		static constexpr int MAX_HASH_SIZE = 1ULL << 18; // 256 GiB
 		static constexpr int PV_BUFFER_LENGTH = 64;
-		static constexpr int MOVE_OVERHEAD = 10;
+		static constexpr int MOVE_OVERHEAD = 20;
 
 		int hash_size = DEFAULT_HASH_SIZE;
 	};

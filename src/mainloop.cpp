@@ -22,14 +22,15 @@ namespace {
 			increment = binc;
 		}
 
-
-		available_time += increment;
-		available_time -= EngineSettings::MOVE_OVERHEAD;
-
 		if (movestogo <= 0) {
-			movestogo = 20;
+			movestogo = 30;
 		}
-		return (available_time / movestogo);
+
+
+		available_time += (movestogo / 2)*increment;
+		available_time = available_time / movestogo;
+		available_time -= EngineSettings::MOVE_OVERHEAD;
+		return available_time;
 	}
 }
 namespace anka {

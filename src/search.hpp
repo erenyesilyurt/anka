@@ -8,8 +8,31 @@
 
 
 namespace anka {
-    inline Move KillerMoves[MAX_PLY][2];
 
+    struct HistoryTable
+    {
+        int history[NUM_SIDES][64][64]{};
+
+        void Clear()
+        {
+            for (Side color : {WHITE, BLACK}) {
+                for (int fr = 0; fr < 64; fr++) {
+                    for (int to = 0; to < 64; to++) {
+                        history[color][fr][to] = 0;
+                    }
+                }
+            }
+        }
+
+        force_inline void Update(Side color, Square from, Square to, int depth) 
+        {
+            history[color][from][to] += depth * depth;
+            if (history[color][from][to] >= move::KILLER_SCORE) {
+                history[color][from][to] /= 2;
+            }
+        }
+    };
+    inline Move KillerMoves[MAX_PLY][2];
     force_inline void SetKillerMove(Move m, int ply)
     {
         #ifdef ANKA_DEBUG

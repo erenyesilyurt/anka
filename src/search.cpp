@@ -10,6 +10,18 @@ namespace anka {
     static constexpr int nodes_per_time_check = 8191;
     static constexpr int R_null = 4;
 
+    static int LMR[MAX_PLY][256]{};
+    static HistoryTable history_table;
+
+    void InitLMR()
+    {
+        for (int depth = 1; depth < MAX_PLY; depth++) {
+            for (int m_count = 1; m_count < 256; m_count++) {
+                LMR[depth][m_count] = 0.5 + log(depth) * log(m_count) * 0.5;
+            }
+        }
+    }
+
     // returns true if there are no illegal moves in pv
     static bool ValidatePV(GameState& pos, const Move* pv)
     {
@@ -84,7 +96,7 @@ namespace anka {
             SearchResult result;
             for (int d = 1; d <= max_depth; d++) {
                 SearchInstance instance;
-                instance.last_timecheck = params.start_time;
+                instance.last_timecheck = Timer::GetTimeInMs();
 
                 int best_score = instance.PVS(pos, -ANKA_INFINITE, ANKA_INFINITE, d, 0, true, true, params);
                 auto end_time = Timer::GetTimeInMs();
@@ -280,12 +292,16 @@ namespace anka {
         }
 
 
+        int moves_made = 0;
+
         // First move
-        Move best_move = list.PopBest(hash_move, KillerMoves[ply][0], KillerMoves[ply][1]);
-        nodes_visited++;
+        Move best_move = list.PopBest(hash_move, KillerMoves[ply][0], KillerMoves[ply][1], pos.SideToPlay());
         pos.MakeMove(best_move);
         int best_score = -PVS(pos, -beta, -alpha, depth - 1, ply + 1, is_pv, true, params);
         pos.UndoMove();
+        nodes_visited++;
+        moves_made++;
+        
 
         if (best_score > alpha) {
             if (is_pv) {
@@ -295,8 +311,10 @@ namespace anka {
             if (best_score >= beta) {
                 STATS(num_fail_high++);
                 STATS(num_fail_high_first++);
-                if (!in_check && move::IsQuiet(best_move))
+                if (!in_check && move::IsQuiet(best_move)) {
+                    history_table.Update(pos.SideToPlay(), move::FromSquare(best_move), move::ToSquare(best_move), depth);
                     SetKillerMove(best_move, ply);
+                }
                 g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
                 return best_score;
             }
@@ -310,9 +328,20 @@ namespace anka {
         // Rest of the moves
         while (list.length > 0) {
             Move move = list.PopBest();
-            nodes_visited++;
             pos.MakeMove(move);
-            int score = -PVS(pos, -alpha - 1, -alpha, depth - 1, ply + 1, false, true, params); // zero window
+            
+            int reduction = 0;
+            if (depth >= 3 && move::IsQuiet(move)) {
+                reduction = LMR[depth][moves_made];
+                int history_score = history_table.history[pos.SideToPlay()][move::FromSquare(move)][move::ToSquare(move)];
+                reduction -= history_score / 5000;
+                if (is_pv)
+                    reduction -= 1;
+
+                reduction = Clamp(reduction, 0, depth - 2);
+            }
+
+            int score = -PVS(pos, -alpha - 1, -alpha, depth-1-reduction, ply + 1, false, true, params); // zero window
             if (score > alpha && score < beta) { // always false in zero-window
                 score = -PVS(pos, -beta, -alpha, depth - 1, ply + 1, true, true, params);
                 if (score > alpha) {
@@ -323,12 +352,16 @@ namespace anka {
                 }
             }
             pos.UndoMove();
+            nodes_visited++;
+            moves_made++;
             if (score > best_score) {
                 if (score >= beta) {
                     STATS(num_fail_high++);
                     g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score, ply, params.uci_stop_flag);
-                    if (!in_check && move::IsQuiet(move))
+                    if (!in_check && move::IsQuiet(move)) {
+                        history_table.Update(pos.SideToPlay(), move::FromSquare(move), move::ToSquare(move), depth);
                         SetKillerMove(move, ply);
+                    }
                     return score;
                 }
                 best_score = score;

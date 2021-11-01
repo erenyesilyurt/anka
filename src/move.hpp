@@ -32,12 +32,12 @@ namespace anka {
 
 
 		inline constexpr int QUIET_SCORE = 0;
-		inline constexpr int CASTLE_SCORE = 100;
-		inline constexpr int PROMOTION_SCORE = 210;
-		inline constexpr int HASH_MOVE_SCORE = 25000;
-		inline constexpr int KILLER_SCORE = 195;
+		inline constexpr int HASH_MOVE_SCORE = 500000;
+		inline constexpr int KILLER_SCORE = 10000;
+		inline constexpr int CAPTURE_SCORE = 11000;		
+		
 
-		inline constexpr int MVVLVA_CAPTURE_SCORES[8][8] = { // [attacker][victim]
+		inline constexpr int MVVLVA[8][8] = { // [attacker][victim]
 			{0, 0,  0,  0,  0,  0,  0,  0}, // NOPIECE X x
 			{0, 0,  0,  0,  0,  0,  0,  0}, // NOPIECE X x
 			{0, 0, 200, 400, 500, 800, 1000, 0}, // pawn X x

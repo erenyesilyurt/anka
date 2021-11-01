@@ -10,6 +10,8 @@ namespace anka {
 	TranspositionTable g_trans_table;
 	EvalParams g_eval_params;
 	EvalData g_eval_data;
+
+	void InitLMR();
 }
 
 int main()
@@ -26,6 +28,7 @@ int main()
 
 	g_eval_params.InitPST();
 	g_trans_table.Init(EngineSettings::DEFAULT_HASH_SIZE);
+	InitLMR();
 
 	uci::UciLoop();
 	return 0;

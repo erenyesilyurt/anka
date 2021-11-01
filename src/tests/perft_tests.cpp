@@ -3,7 +3,7 @@
 //#include "evaluation.hpp"
 //#include "ttable.hpp"
 //
-//static constexpr bool PERFT_TO_6 = false;
+//static constexpr bool PERFT_TO_6 = true;
 //
 //struct PerftPosition {
 //	const char* fen;
