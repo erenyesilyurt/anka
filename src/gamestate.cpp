@@ -24,7 +24,8 @@ void anka::GameState::Clear()
 	m_halfmove_clock = 0;
 	m_side = NOSIDE;
 	m_zobrist_key = C64(0);
-	m_root_ply = 0;
+	m_ply = 0;
+	m_root_ply_index = 0;
 }
 
 // BUG: trailing whitespaces in fens cause a crash

@@ -2,6 +2,7 @@
 
 #include "bitboard.hpp"
 #include "boarddefs.hpp"
+#include "engine_settings.hpp"
 #include "hash.hpp"
 #include "attacks.hpp"
 #include "move.hpp"
@@ -13,7 +14,6 @@ namespace anka {
 	constexpr int kStateHistoryMaxSize = 1024;
 
 	struct PositionRecord {
-		u64 zobrist_key;
 		Move move_made;
 		int half_move_clock;
 		Square ep_target;
@@ -24,9 +24,10 @@ namespace anka {
 	public:
 		GameState() : m_piecesBB{}, m_occupation{}, m_board{}, m_ep_target{ NO_SQUARE },
 			m_side{ WHITE }, m_halfmove_clock{ 0 }, m_castling_rights{ 0 },
-			m_zobrist_key{}, m_root_ply{}, m_state_history{}
+			m_zobrist_key{}, m_root_ply_index{}, m_ply{}, m_state_history{}, m_key_history{}
 		{
 			#ifndef EVAL_TUNING
+			m_key_history = new u64[kStateHistoryMaxSize];
 			m_state_history = new PositionRecord[kStateHistoryMaxSize];
 			#endif
 		}
@@ -34,9 +35,11 @@ namespace anka {
 		~GameState()
 		{
 			#ifndef EVAL_TUNING
+			delete[] m_key_history;
 			delete[] m_state_history;
 			#endif
 		}
+		
 
 		force_inline Bitboard Occupancy() const { return m_occupation; }
 
@@ -155,11 +158,12 @@ namespace anka {
 				return true;
 			}		
 
-			int ply_limit = Max(m_root_ply - m_halfmove_clock, 0);
+			int plies_from_root = m_root_ply_index + m_ply;
+			int ply_limit = Max(plies_from_root - m_halfmove_clock, 0);
 
 			// repetition
-			for (int ply = m_root_ply - 4; ply >= ply_limit; ply-=2) {
-				if (m_zobrist_key == m_state_history[ply].zobrist_key) {
+			for (int p = plies_from_root - 4; p >= ply_limit; p-=2) {
+				if (m_zobrist_key == m_key_history[p]) {
 					return true;
 				}
 			}
@@ -172,8 +176,13 @@ namespace anka {
 		force_inline int HalfMoveClock() const { return m_halfmove_clock; }
 		force_inline byte CastlingRights() const { return m_castling_rights; }
 		force_inline u64 PositionKey() const { return m_zobrist_key; }
-		force_inline int RootPly() const { return m_root_ply; }
-
+		force_inline int Ply() const { return m_ply; }
+		force_inline Move LastMove() const { return m_state_history[m_ply - 1].move_made; }
+		force_inline void SetRootPlyIndex() 
+		{
+			m_root_ply_index = m_ply;
+			m_ply = 0; 
+		}
 
 		u64 CalculateKey();
 
@@ -237,8 +246,10 @@ namespace anka {
 		int m_halfmove_clock;
 		byte m_castling_rights;
 		u64 m_zobrist_key;
-		int m_root_ply; // 0 at the root of the state history (not always the root of the search tree)
 		PositionRecord *m_state_history;
+		u64 *m_key_history;
+		int m_root_ply_index;
+		int m_ply;
 
 	};
 } // namespace anka

@@ -4,14 +4,14 @@
 #include "attacks.hpp"
 #include "evaluation.hpp"
 #include "engine_settings.hpp"
+#include "search.hpp"
+
 
 namespace anka {
 	// Global structures
 	TranspositionTable g_trans_table;
 	EvalParams g_eval_params;
 	EvalData g_eval_data;
-
-	void InitLMR();
 }
 
 int main()
@@ -27,9 +27,18 @@ int main()
 	attacks::InitAttacks();
 
 	g_eval_params.InitPST();
-	g_trans_table.Init(EngineSettings::DEFAULT_HASH_SIZE);
-	InitLMR();
+	
+	if (!g_trans_table.Init(EngineSettings::DEFAULT_HASH_SIZE)) {
+		fprintf(stderr, "Failed to allocate transposition table memory\n");
+		return EXIT_FAILURE;
+	}
+
+	if (!InitSearch()) {
+		return EXIT_FAILURE;
+	}
 
 	uci::UciLoop();
+
+	FreeSearchStack();
 	return 0;
 }

@@ -23,11 +23,11 @@ namespace anka {
 		int flip_mask = 56 & (~(m_side - 1)); // if black: 56 , if white: 0
 		int push_dir = 8 - (m_side << 4); // if black: south, if white: north
 
-		m_state_history[m_root_ply].castle_rights = m_castling_rights;
-		m_state_history[m_root_ply].ep_target = m_ep_target;
-		m_state_history[m_root_ply].half_move_clock = m_halfmove_clock;
-		m_state_history[m_root_ply].zobrist_key = m_zobrist_key;
-		m_state_history[m_root_ply].move_made = move;
+		m_state_history[m_ply].castle_rights = m_castling_rights;
+		m_state_history[m_ply].ep_target = m_ep_target;
+		m_state_history[m_ply].half_move_clock = m_halfmove_clock;
+		m_state_history[m_ply].move_made = move;
+		m_key_history[m_root_ply_index + m_ply] = m_zobrist_key;
 
 		// remove hashes from key
 		UpdateKeyWithEnPassant();
@@ -126,7 +126,7 @@ namespace anka {
 
 		
 		m_side = opposite_side;
-		m_root_ply++;
+		m_ply++;
 
 		m_occupation = m_piecesBB[WHITE] | m_piecesBB[BLACK];
 		// add hashes
@@ -140,19 +140,16 @@ namespace anka {
 
 	void GameState::UndoMove()
 	{
-		m_root_ply = m_root_ply - 1;
-
-		m_halfmove_clock = m_state_history[m_root_ply].half_move_clock;
-		m_castling_rights = m_state_history[m_root_ply].castle_rights;
-		m_ep_target = m_state_history[m_root_ply].ep_target;
+		m_ply = m_ply - 1;
 		m_side = m_side ^ 1;
-
 		int flip_mask = 56 & (~(m_side - 1)); // black: 56 white: 0
 		int push_dir = 8 - (m_side << 4); // if black: south, if white: north
 		Side opposite_side = static_cast<Side>(m_side ^ 1);
 
-		Move move = m_state_history[m_root_ply].move_made;
-
+		m_halfmove_clock = m_state_history[m_ply].half_move_clock;
+		m_castling_rights = m_state_history[m_ply].castle_rights;
+		m_ep_target = m_state_history[m_ply].ep_target;
+		Move move = m_state_history[m_ply].move_made;
 		Square from = move::FromSquare(move);
 		Square to = move::ToSquare(move);
 		File to_sq_file = GetFile(to);
@@ -212,34 +209,34 @@ namespace anka {
 			m_board[rook_to] = NO_PIECE;
 		}
 
-		m_zobrist_key = m_state_history[m_root_ply].zobrist_key;
+		m_zobrist_key = m_key_history[m_root_ply_index + m_ply];
 		m_occupation = m_piecesBB[WHITE] | m_piecesBB[BLACK];
 		ANKA_ASSERT(Validate());
 	}
 
 	void GameState::MakeNullMove()
 	{
-		m_state_history[m_root_ply].zobrist_key = m_zobrist_key;
-		m_state_history[m_root_ply].ep_target = m_ep_target;
-		m_state_history[m_root_ply].half_move_clock = m_halfmove_clock;
-		m_state_history[m_root_ply].move_made = move::NULL_MOVE;
+		m_key_history[m_root_ply_index + m_ply] = m_zobrist_key;
+		m_state_history[m_ply].ep_target = m_ep_target;
+		m_state_history[m_ply].half_move_clock = m_halfmove_clock;
+		m_state_history[m_ply].move_made = move::NULL_MOVE;
 
 		UpdateKeyWithEnPassant();
 		m_ep_target = NO_SQUARE;
 		m_halfmove_clock = 0; // treat null move as an irreversible move
 		m_side = m_side ^ 1;
 		UpdateKeyWithEnPassant();
-
 		UpdateKeyWithSide();
-		m_root_ply++;
+
+		m_ply++;
 	}
 
 	void GameState::UndoNullMove()
-	{		
-		m_root_ply = m_root_ply - 1;
+	{	
+		m_ply = m_ply - 1;
 		m_side = m_side ^ 1;	
-		m_ep_target = m_state_history[m_root_ply].ep_target;
-		m_halfmove_clock = m_state_history[m_root_ply].half_move_clock;
-		m_zobrist_key = m_state_history[m_root_ply].zobrist_key;
+		m_ep_target = m_state_history[m_ply].ep_target;
+		m_halfmove_clock = m_state_history[m_ply].half_move_clock;
+		m_zobrist_key = m_key_history[m_root_ply_index + m_ply];
 	}
 }

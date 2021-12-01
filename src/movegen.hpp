@@ -2,6 +2,7 @@
 #include "attacks.hpp"
 #include "gamestate.hpp"
 #include "move.hpp"
+#include "heuristictables.hpp"
 
 /* MOVE ENCODING
 Moves are encoded as 32-bit integers.
@@ -26,7 +27,7 @@ namespace anka {
 	template <size_t n>
 	class MoveList {
 	public:
-		GradedMove moves[n];
+		GradedMove moves[n]{};
 		int length = 0;
 		
 		// removes the highest ranked move from the list and returns it
@@ -53,7 +54,7 @@ namespace anka {
 			return result;
 		}
 
-		Move PopBest(Move hash_move, Move killer_1, Move killer_2, Side side_to_move)
+		Move PopBest(Move hash_move, Move killer_1, Move killer_2, Side side_to_move, HistoryTable& history_table)
 		{
 			int best_index = 0;
 			int best_score = moves[0].score;
@@ -67,9 +68,8 @@ namespace anka {
 				{
 					moves[i].score = move::KILLER_SCORE;
 				}
-				else {
-					if (move::IsQuiet(m))
-						moves[i].score += history_table.history[side_to_move][move::FromSquare(m)][move::ToSquare(m)];
+				else if (move::IsQuiet(m)) {
+					moves[i].score = history_table.history[side_to_move][move::FromSquare(m)][move::ToSquare(m)];
 				}
 
 				if (moves[i].score > best_score) {
@@ -99,108 +99,11 @@ namespace anka {
 			return false;
 		}
 
-		// set order score of move if it exists
-		force_inline void SetMoveScore(Move m, int score)
-		{
-			for (int i = 0; i < length; i++) {
-				if (m == moves[i].move) {
-					moves[i].score = score;
-					return;
-				}
-			}
-		}
-
-		// generates legal moves. returns true if in check
+		// generate legal moves. return true if in check
 		bool GenerateLegalMoves(const GameState& pos);
-		void GenerateLegalCaptures(const GameState& pos);
 
-		template <int side, int piece>
-		void GeneratePieceMoves(const GameState& pos, Bitboard ally_pieces,
-			Bitboard opp_pieces, Bitboard free_to_move,
-			Bitboard pushables, Bitboard capturables)
-		{
-			static_assert(piece >= KNIGHT && piece <= QUEEN, "Piece type must be a major or minor piece");
-
-			ally_pieces &= pos.Pieces<side, piece>() & free_to_move;
-
-			Bitboard occ = pos.Occupancy();
-			Bitboard empty = ~occ;
-			while (ally_pieces) {
-				Square from = bitboard::BitScanForward(ally_pieces);
-				Bitboard attacks;
-				if constexpr (piece == KNIGHT)
-					attacks = attacks::KnightAttacks(from);
-				else if (piece == BISHOP)
-					attacks = attacks::BishopAttacks(from, occ);
-				else if (piece == ROOK)
-					attacks = attacks::RookAttacks(from, occ);
-				else if (piece == QUEEN)
-					attacks = attacks::BishopAttacks(from, occ) | attacks::RookAttacks(from, occ);
-				Bitboard cap_targets = attacks & opp_pieces & capturables;
-				Bitboard push_targets = attacks & empty & pushables;
-				while (cap_targets) {
-					Square to = bitboard::BitScanForward(cap_targets);
-					AddCapture<piece>(from, to, pos.GetPiece(to));
-					cap_targets &= cap_targets - 1;
-				}
-				while (push_targets) {
-					Square to = bitboard::BitScanForward(push_targets);
-					AddQuiet<piece>(from, to);
-					push_targets &= push_targets - 1;
-				}
-				ally_pieces &= ally_pieces - 1;
-			}
-		}
-
-		template <int side>
-		void GeneratePawnPushMoves(const GameState& pos, Bitboard ally_pawns, Bitboard legal_squares)
-		{
-			constexpr int push_dir = NORTH - (side << 4); // south if black
-			u64 dpush_rank_mask;
-			u64 prom_rank_mask;
-			if constexpr (side == WHITE) {
-				dpush_rank_mask = C64(0xFF000000); // rank 4
-				prom_rank_mask = C64(0xFF00000000000000); // rank 8
-			}
-			else {
-				dpush_rank_mask = C64(0xFF00000000); // rank 5
-				prom_rank_mask = C64(0xFF); // rank 1
-			}
-			u64 noprom_ranks_mask = ~prom_rank_mask;
-
-			Bitboard empty = ~pos.Occupancy();
-
-			Bitboard single_push_targets = bitboard::StepOne<push_dir>(ally_pawns) & empty;
-			Bitboard double_push_targets = bitboard::StepOne<push_dir>(single_push_targets) & empty & dpush_rank_mask & legal_squares;
-			single_push_targets &= legal_squares;
-
-			Bitboard promotion_targets = single_push_targets & prom_rank_mask;
-			single_push_targets &= noprom_ranks_mask; // exclude promotion targets
-
-			while (single_push_targets) {
-				Square to = bitboard::BitScanForward(single_push_targets);
-				Square from = to - push_dir;
-
-				AddPawnPush(from, to);
-				single_push_targets &= single_push_targets - 1;
-			}
-
-			while (double_push_targets) {
-				Square to = bitboard::BitScanForward(double_push_targets);
-				Square from = to - (2 * push_dir);
-
-				AddDoublePawnPush(from, to);
-				double_push_targets &= double_push_targets - 1;
-			}
-
-			while (promotion_targets) {
-				Square to = bitboard::BitScanForward(promotion_targets);
-				Square from = to - push_dir;
-
-				AddPromotions(from, to);
-				promotion_targets &= promotion_targets - 1;
-			}
-		}
+		// generate legal captures
+		void GenerateLegalCaptures(const GameState& pos);		
 
 	private:
 		// Generate castling moves. Assumes that king is not in check!
@@ -321,13 +224,100 @@ namespace anka {
 			}
 		}
 
+		template <int side, int piece>
+		void GeneratePieceMoves(const GameState& pos, Bitboard ally_pieces,
+			Bitboard opp_pieces, Bitboard free_to_move,
+			Bitboard pushables, Bitboard capturables)
+		{
+			static_assert(piece >= KNIGHT && piece <= QUEEN, "Piece type must be a major or minor piece");
+
+			ally_pieces &= pos.Pieces<side, piece>() & free_to_move;
+
+			Bitboard occ = pos.Occupancy();
+			Bitboard empty = ~occ;
+			while (ally_pieces) {
+				Square from = bitboard::BitScanForward(ally_pieces);
+				Bitboard attacks;
+				if constexpr (piece == KNIGHT)
+					attacks = attacks::KnightAttacks(from);
+				else if (piece == BISHOP)
+					attacks = attacks::BishopAttacks(from, occ);
+				else if (piece == ROOK)
+					attacks = attacks::RookAttacks(from, occ);
+				else if (piece == QUEEN)
+					attacks = attacks::BishopAttacks(from, occ) | attacks::RookAttacks(from, occ);
+				Bitboard cap_targets = attacks & opp_pieces & capturables;
+				Bitboard push_targets = attacks & empty & pushables;
+				while (cap_targets) {
+					Square to = bitboard::BitScanForward(cap_targets);
+					AddCapture<piece>(from, to, pos.GetPiece(to));
+					cap_targets &= cap_targets - 1;
+				}
+				while (push_targets) {
+					Square to = bitboard::BitScanForward(push_targets);
+					AddQuiet<piece>(from, to);
+					push_targets &= push_targets - 1;
+				}
+				ally_pieces &= ally_pieces - 1;
+			}
+		}
+
+		template <int side>
+		void GeneratePawnPushMoves(const GameState& pos, Bitboard ally_pawns, Bitboard legal_squares)
+		{
+			constexpr int push_dir = NORTH - (side << 4); // south if black
+			u64 dpush_rank_mask;
+			u64 prom_rank_mask;
+			if constexpr (side == WHITE) {
+				dpush_rank_mask = C64(0xFF000000); // rank 4
+				prom_rank_mask = C64(0xFF00000000000000); // rank 8
+			}
+			else {
+				dpush_rank_mask = C64(0xFF00000000); // rank 5
+				prom_rank_mask = C64(0xFF); // rank 1
+			}
+			u64 noprom_ranks_mask = ~prom_rank_mask;
+
+			Bitboard empty = ~pos.Occupancy();
+
+			Bitboard single_push_targets = bitboard::StepOne<push_dir>(ally_pawns) & empty;
+			Bitboard double_push_targets = bitboard::StepOne<push_dir>(single_push_targets) & empty & dpush_rank_mask & legal_squares;
+			single_push_targets &= legal_squares;
+
+			Bitboard promotion_targets = single_push_targets & prom_rank_mask;
+			single_push_targets &= noprom_ranks_mask; // exclude promotion targets
+
+			while (single_push_targets) {
+				Square to = bitboard::BitScanForward(single_push_targets);
+				Square from = to - push_dir;
+
+				AddPawnPush(from, to);
+				single_push_targets &= single_push_targets - 1;
+			}
+
+			while (double_push_targets) {
+				Square to = bitboard::BitScanForward(double_push_targets);
+				Square from = to - (2 * push_dir);
+
+				AddDoublePawnPush(from, to);
+				double_push_targets &= double_push_targets - 1;
+			}
+
+			while (promotion_targets) {
+				Square to = bitboard::BitScanForward(promotion_targets);
+				Square from = to - push_dir;
+
+				AddPromotions(from, to);
+				promotion_targets &= promotion_targets - 1;
+			}
+		}
+
 		template <int side>
 		bool GenerateMoves(const GameState& pos);
 
 		template <int side>
 		void GenerateCaptures(const GameState& pos);
 	private:
-
 		static constexpr int PromotablePieces[4] { QUEEN, BISHOP,  ROOK, KNIGHT };
 
 

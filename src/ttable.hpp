@@ -107,13 +107,13 @@ namespace anka {
 				return;
 			ANKA_ASSERT(pos_hash != C64(0));
 			ANKA_ASSERT(best_move != 0);
-			ANKA_ASSERT(depth <= MAX_PLY && depth >= 1);
+			ANKA_ASSERT(depth <= MAX_DEPTH && depth >= 1);
 
 			size_t bucket_index = pos_hash & (m_num_buckets - 1);
 			u32 pos_key = static_cast<u32>(pos_hash >> 32);
 
 			int chosen_index = -1;
-			int min_depth = MAX_PLY + 1;
+			int min_depth = MAX_DEPTH + 1;
 			// replacement strategy: same entry > different age > lower depth
 			for (int i = 0; i < num_cells; i++) {
 				if (pos_key == m_table[bucket_index].records[i].key) {

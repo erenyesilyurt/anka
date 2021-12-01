@@ -182,6 +182,7 @@ namespace anka {
 				pos.MakeMove(move);
 				line = strtok(NULL, " ");
 			}
+			pos.SetRootPlyIndex();
 		}
 	}
 

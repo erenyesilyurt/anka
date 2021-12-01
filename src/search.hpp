@@ -8,51 +8,8 @@
 
 
 namespace anka {
-
-    struct HistoryTable
-    {
-        int history[NUM_SIDES][64][64]{};
-
-        void Clear()
-        {
-            for (Side color : {WHITE, BLACK}) {
-                for (int fr = 0; fr < 64; fr++) {
-                    for (int to = 0; to < 64; to++) {
-                        history[color][fr][to] = 0;
-                    }
-                }
-            }
-        }
-
-        force_inline void Update(Side color, Square from, Square to, int depth) 
-        {
-            history[color][from][to] += depth * depth;
-            if (history[color][from][to] >= move::KILLER_SCORE) {
-                history[color][from][to] /= 2;
-            }
-        }
-    };
-    inline Move KillerMoves[MAX_PLY][2];
-    force_inline void SetKillerMove(Move m, int ply)
-    {
-        #ifdef ANKA_DEBUG
-        if (KillerMoves[ply][0] != 0 && KillerMoves[ply][1] != 0)
-            assert(KillerMoves[ply][0] != KillerMoves[ply][1]);
-        #endif // ANKA_DEBUG
-
-        if (KillerMoves[ply][0] != m) {
-            KillerMoves[ply][1] = KillerMoves[ply][0];
-            KillerMoves[ply][0] = m;
-        }
-    }
-
-    force_inline void ClearKillerMoves()
-    {
-        for (int i = 0; i < MAX_PLY; i++) {
-            KillerMoves[i][0] = move::NO_MOVE;
-            KillerMoves[i][1] = move::NO_MOVE;
-        }
-    }
+    bool InitSearch();
+    void FreeSearchStack();
 
 
     struct SearchResult {
@@ -85,7 +42,7 @@ namespace anka {
                 printf("cp %d pv ", best_score);
             }
 
-            for (int i = 0; i < MAX_PLY; i++) {
+            for (int i = 0; i <= MAX_DEPTH; i++) {
                 if (pv[i] == 0)
                     break;
                 move::ToString(pv[i], move_str);
@@ -120,16 +77,21 @@ namespace anka {
         }
     };
 
+    struct SearchStack {
+        MoveList<256> move_list[MAX_PLY + 1]{};
+        Move pv[(MAX_DEPTH + 1) * (MAX_DEPTH + 1)]{};
+    };
+
 	class SearchInstance {
+    public:
+        int Quiescence(GameState& pos, int alpha, int beta, SearchParams& params);
+        template <bool pruning = true>
+        int PVS(GameState& pos, int alpha, int beta, int depth, bool is_pv, SearchParams& params);
 	public:
         u64 nodes_visited = C64(0);
         u64 num_fail_high = C64(1);
         u64 num_fail_high_first = C64(1);
         long long last_timecheck = 0;
-	public:
-        int Quiescence(GameState& pos, int alpha, int beta, int ply, SearchParams& params);
-        template <bool pruning = true>
-        int PVS(GameState& pos, int alpha, int beta, int depth, int ply, bool is_pv, bool null_pruning, SearchParams& params);
     private:
         void CheckTime(SearchParams& params);
 	}; // SearchInstance

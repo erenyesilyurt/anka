@@ -28,13 +28,13 @@ namespace anka {
 
 
 	namespace move {
-		enum {NO_MOVE = 0, NULL_MOVE = 0xffffffff};
-
+		inline constexpr u32 NO_MOVE = 0;
+		inline constexpr u32 NULL_MOVE = 0xffffffff;
 
 		inline constexpr int QUIET_SCORE = 0;
-		inline constexpr int HASH_MOVE_SCORE = 500000;
-		inline constexpr int KILLER_SCORE = 10000;
-		inline constexpr int CAPTURE_SCORE = 11000;		
+		inline constexpr int HASH_MOVE_SCORE = 500'000;
+		inline constexpr int KILLER_SCORE = 50'000;
+		inline constexpr int CAPTURE_SCORE = 100'000;		
 		
 
 		inline constexpr int MVVLVA[8][8] = { // [attacker][victim]

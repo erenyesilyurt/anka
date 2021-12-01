@@ -19,5 +19,6 @@ namespace anka {
 	inline constexpr int ANKA_MATE = SHRT_MAX / 2;
 	inline constexpr int LOWER_MATE_THRESHOLD = -ANKA_MATE + 383;
 	inline constexpr int UPPER_MATE_THRESHOLD = ANKA_MATE - 383;
-	inline constexpr int MAX_PLY = 128;
+	inline constexpr int MAX_DEPTH = 128;
+	inline constexpr int MAX_PLY = 200;
 }

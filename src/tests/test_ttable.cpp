@@ -43,7 +43,7 @@
 //			break;
 //		u64 pos_key = rng.rand64();
 //		NodeType type = static_cast<NodeType>(rng.rand64() % 3);
-//		int depth = rng.rand64(1, MAX_PLY);
+//		int depth = rng.rand64(1, MAX_DEPTH);
 //		int value = rng.rand(-15000, 15000);
 //		Move best_move = rng.rand32();
 //
