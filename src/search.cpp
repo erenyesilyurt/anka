@@ -78,7 +78,7 @@ namespace anka {
 
         params.remaining_time-= time_passed;
 
-            if (params.remaining_time < 0)
+            if (params.remaining_time <= 0)
                 params.uci_stop_flag = true;
     }
 
@@ -117,13 +117,17 @@ namespace anka {
             }
 
             // Iterative deepening loop
-            SearchResult result;         
+            SearchResult result;
+            result.total_time = 1;
+            result.pv = s_stack->pv;
             for (int d = 1; d <= max_depth; d++) {          
                 SearchInstance instance;
                 instance.last_timecheck = Timer::GetTimeInMs();
 
+                auto iter_start_time = instance.last_timecheck;
                 int best_score = instance.PVS(pos, -ANKA_INFINITE, ANKA_INFINITE, d, true, params);
-                auto end_time = Timer::GetTimeInMs();
+                auto iter_end_time = Timer::GetTimeInMs();
+                auto delta_time = iter_end_time - iter_start_time;
 
                 if (params.uci_stop_flag) {
                     break;
@@ -132,10 +136,9 @@ namespace anka {
                 best_move = s_stack->pv[0];
                 result.best_score = best_score;
                 result.depth = d;
-                result.total_time = end_time - params.start_time + 1;
+                result.total_time += delta_time;
                 result.total_nodes += instance.nodes_visited;
                 result.nps = result.total_nodes / (result.total_time / 1000.0);
-                result.pv = s_stack->pv;
 
                 #ifdef STATS_ENABLED
                 result.fh = instance.num_fail_high;
@@ -144,8 +147,13 @@ namespace anka {
 
 
                 result.Print(pos);
-
                 ANKA_ASSERT(ValidatePV(pos, s_stack->pv));
+                
+                if (params.check_timeup) {
+                    if (delta_time > params.remaining_time * 5 >> 3) {
+                        break;
+                    }
+                }
             }
 
             // don't stop the search in infinite search mode unless a stop command is received
