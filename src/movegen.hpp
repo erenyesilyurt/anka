@@ -54,7 +54,7 @@ namespace anka {
 			return result;
 		}
 
-		Move PopBest(Move hash_move, Move killer_1, Move killer_2, Side side_to_move, HistoryTable& history_table)
+		Move PopBest(Move hash_move, Move killer_1, Move killer_2)
 		{
 			int best_index = 0;
 			int best_score = moves[0].score;
@@ -67,9 +67,6 @@ namespace anka {
 				else if ((m == killer_1) || (m == killer_2))
 				{
 					moves[i].score = move::KILLER_SCORE;
-				}
-				else if (move::IsQuiet(m)) {
-					moves[i].score = history_table.history[side_to_move][move::FromSquare(m)][move::ToSquare(m)];
 				}
 
 				if (moves[i].score > best_score) {

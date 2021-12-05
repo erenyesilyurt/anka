@@ -8,11 +8,13 @@ namespace anka {
     
 
     namespace {
+        constexpr int PV_NODE = 1;
+        constexpr int NOT_PV= 0;
         constexpr int nodes_per_time_check = 8191;
-        constexpr int R_null = 4;
+        constexpr int MAX_PV_LENGTH = MAX_DEPTH + 1;
 
+        Move principal_variation[MAX_PV_LENGTH]{};
         int LMR[MAX_DEPTH+1][256]{};
-        HistoryTable history_table;
         KillersTable killers;
         SearchStack* s_stack;
 
@@ -85,13 +87,13 @@ namespace anka {
     void StartSearch(GameState& pos, SearchParams& params)
     {
         killers.Clear();
-        for (int i = 0; i < (MAX_DEPTH+1) * (MAX_DEPTH+1); i++)
-            s_stack->pv[i] = move::NO_MOVE;
-        
+        for (int i = 0; i < MAX_PV_LENGTH; i++) {
+            principal_variation[i] = move::NO_MOVE;
+        }
 
         bool skip_search = false;
         char best_move_str[6];
-        Move best_move = 0;
+        Move best_move = move::NO_MOVE;
 
         g_trans_table.IncrementAge();
         // check if there are no legal moves / only one legal move in the position
@@ -110,6 +112,7 @@ namespace anka {
             }
         }
 
+
         if (!skip_search) {
             int max_depth = MAX_DEPTH;
             if (params.depth_limit > 0 && params.depth_limit < MAX_DEPTH) {
@@ -119,21 +122,22 @@ namespace anka {
             // Iterative deepening loop
             SearchResult result;
             result.total_time = 1;
-            result.pv = s_stack->pv;
+            result.pv = principal_variation;
             for (int d = 1; d <= max_depth; d++) {          
                 SearchInstance instance;
                 instance.last_timecheck = Timer::GetTimeInMs();
 
                 auto iter_start_time = instance.last_timecheck;
-                int best_score = instance.PVS(pos, -ANKA_INFINITE, ANKA_INFINITE, d, true, params);
+                int best_score = instance.PVS<PV_NODE>(pos, -ANKA_INFINITE, ANKA_INFINITE, d, params);
                 auto iter_end_time = Timer::GetTimeInMs();
                 auto delta_time = iter_end_time - iter_start_time;
 
+                int pv_length = g_trans_table.ExtractPV(pos, 0, principal_variation, MAX_PV_LENGTH);
+                best_move = principal_variation[0];
                 if (params.uci_stop_flag) {
                     break;
                 }
 
-                best_move = s_stack->pv[0];
                 result.best_score = best_score;
                 result.depth = d;
                 result.total_time += delta_time;
@@ -146,8 +150,8 @@ namespace anka {
                 #endif
 
 
-                result.Print(pos);
-                ANKA_ASSERT(ValidatePV(pos, s_stack->pv));
+                result.Print(pos, pv_length);
+                ANKA_ASSERT(ValidatePV(pos, principal_variation));
                 
                 if (params.check_timeup) {
                     if (delta_time > params.remaining_time * 5 >> 3) {
@@ -233,8 +237,8 @@ namespace anka {
         return alpha;
     }
 
-    template<bool pruning>
-    int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, bool is_pv, SearchParams& params)
+    template<bool is_pv>
+    int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
         int ply = pos.Ply();
@@ -245,21 +249,12 @@ namespace anka {
         }
         
         int old_alpha = alpha;
-        int pv_index = 0;
-        int pv_index_next = 0;
-
-        if (is_pv) {
-            pv_index = ply * MAX_DEPTH;
-            pv_index_next = pv_index + MAX_DEPTH;
-            s_stack->pv[pv_index] = 0;
-        }
-
 
         if (pos.IsDrawn()) {
             return 0;
         }
 
-        if (depth <= 0)
+        if (depth <= 0 || depth > MAX_DEPTH)
             return Quiescence(pos, alpha, beta, params);
 
         u64 pos_key = pos.PositionKey();
@@ -268,27 +263,27 @@ namespace anka {
         
         if (g_trans_table.Get(pos_key, probe_result, ply)) {
             hash_move = probe_result.move;
-            auto node_type = probe_result.GetNodeType();
-            if (!is_pv && probe_result.depth >= depth) {
-                switch (node_type) {
-                case NodeType::EXACT: {
-                    return probe_result.value;
-                }
-                case NodeType::UPPERBOUND: {
-                    if (alpha > probe_result.value)
+            if constexpr (!is_pv) {
+                auto node_type = probe_result.GetNodeType();
+                if (probe_result.depth >= depth) {
+                    switch (node_type) {
+                    case NodeType::EXACT: {
                         return probe_result.value;
-                    break;
+                    }
+                    case NodeType::UPPERBOUND: {
+                        if (alpha > probe_result.value)
+                            return probe_result.value;
+                        break;
+                    }
+                    case NodeType::LOWERBOUND: {
+                        if (probe_result.value >= beta)
+                            return probe_result.value;
+                        break;
+                    }
+                    } // end of switch
                 }
-                case NodeType::LOWERBOUND: {
-                    if (probe_result.value >= beta)
-                        return probe_result.value;
-                    break;
-                }
-                } // end of switch
             }
-        }
-
-        int eval = pos.ClassicalEvaluation();
+        }      
 
         bool in_check = s_stack->move_list[ply].GenerateLegalMoves(pos);
         if (s_stack->move_list[ply].length == 0) {
@@ -300,110 +295,102 @@ namespace anka {
             }
         }
 
-        if constexpr (pruning) {
-            if (!in_check && !is_pv) {
+        
+        if constexpr (!is_pv) {
+            if (!in_check) {
                 if (pos.AllyNonPawnPieces() > 0) {
+                    int eval = pos.ClassicalEvaluation();
+                    auto eval_margin = eval - beta;
                     // Static Null Move Pruning (Reverse Futility)
-                    int margin = 75 * depth;
-                    if (depth < 7 && eval - beta >= margin) {
+                    if (depth < 7 && eval_margin >= 75 * depth) {
                         return eval;
                     }
 
                     // Null move reductions
-                    if (pos.LastMove() != move::NULL_MOVE && eval >= beta) {
+                    if (pos.LastMove() != move::NULL_MOVE && eval_margin >= 0 && nmp_enabled) {
+                        int R_null = 4 + Min(3, eval_margin / 150) + depth / 4; // adaptive reduction, like stockfish
                         pos.MakeNullMove();
-                        int score = -PVS(pos, -beta, -beta + 1, depth - R_null,  false, params);
+                        int score = -PVS<NOT_PV>(pos, -beta, -beta + 1, depth - R_null, params);
                         pos.UndoNullMove();
+
                         if (score >= beta) {
-                            int R = depth > 6 ? 4 : 3;
-                            depth -= R;
-                            if (depth <= 0)
-                                return Quiescence(pos, alpha, beta, params);
+                            if (depth < 12)
+                                return score;
+
+                            // verification at high depths
+                            nmp_enabled = false;
+                            int v_score = PVS<NOT_PV>(pos, -beta, -beta+1, depth - R_null, params);
+                            nmp_enabled = true;
+                            if (v_score >= beta)
+                                return v_score;
                         }
                     }
                 }
             }
         }
-
-
-        int moves_made = 0;
-
-        Side color = pos.SideToPlay();
-        // First move
-        Move best_move = s_stack->move_list[ply].PopBest(hash_move,
-            killers.moves[ply][0], killers.moves[ply][1],
-            color, history_table);
-        pos.MakeMove(best_move);
-        int best_score = -PVS(pos, -beta, -alpha, depth - 1, is_pv, params);
-        pos.UndoMove();
-        nodes_visited++;
-        moves_made++;
-        
-
-        if (best_score > alpha) {
-            if (is_pv) {
-                s_stack->pv[pv_index] = best_move;
-                memcpy(s_stack->pv + pv_index + 1, s_stack->pv + pv_index_next, (MAX_DEPTH - ply - 1) * sizeof(Move));
-            }
-            if (best_score >= beta) {
-                STATS(num_fail_high++);
-                STATS(num_fail_high_first++);
-                if (!in_check && move::IsQuiet(best_move)) {
-                    history_table.Update(pos.SideToPlay(), move::FromSquare(best_move), move::ToSquare(best_move), depth);
-                    killers.Put(best_move, ply);
+        else {
+            // internal iterative deepening
+            if (hash_move == move::NO_MOVE && depth > 7) {
+                PVS<PV_NODE>(pos, alpha, beta, depth >> 1, params);
+                if (g_trans_table.Get(pos_key, probe_result, ply)) {
+                    hash_move = probe_result.move;
                 }
-                g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
-                return best_score;
             }
-            ANKA_ASSERT(is_pv);
-            alpha = best_score; // not reached in zero-window
         }
 
-        if (params.uci_stop_flag)
-            return beta;
-
-        // Rest of the moves
+        
+        int moves_made = 0;
+        Move best_move = move::NO_MOVE;
+        int best_score = -ANKA_INFINITE;
         while (s_stack->move_list[ply].length > 0) {
-            Move move = s_stack->move_list[ply].PopBest();
-            pos.MakeMove(move);
-            
-            int reduction = 0;
-            if (depth >= 3 && move::IsQuiet(move)) {
-                reduction = LMR[depth][moves_made];
-                int history_score = history_table.history[pos.SideToPlay()][move::FromSquare(move)][move::ToSquare(move)];
-                reduction -= history_score / 10'000;
-                if (is_pv)
-                    reduction -= 1;
+            Move move = move::NO_MOVE;
+            int score = -ANKA_INFINITE;
 
-                reduction = Clamp(reduction, 0, depth - 2);
+            if (moves_made == 0) {
+                move = s_stack->move_list[ply].PopBest(hash_move,
+                    killers.moves[ply][0], killers.moves[ply][1]);
+                pos.MakeMove(move);
+                score = -PVS<is_pv>(pos, -beta, -alpha, depth - 1, params);
             }
+            else {
+                move = s_stack->move_list[ply].PopBest();
+                pos.MakeMove(move);
 
-            int score = -PVS(pos, -alpha - 1, -alpha, depth-1-reduction, false, params); // zero window
-            if (score > alpha && score < beta) { // always false in zero-window
-                score = -PVS(pos, -beta, -alpha, depth - 1, true, params);
-                if (score > alpha) {
-                    ANKA_ASSERT(is_pv);
-                    alpha = score;
-                    s_stack->pv[pv_index] = move;
-                    memcpy(s_stack->pv + pv_index + 1, s_stack->pv + pv_index_next, (MAX_DEPTH - ply - 1) * sizeof(Move));
+                int reduction = 0;
+                if (!in_check && depth >= 3 && move::IsQuiet(move)) {
+                    reduction = LMR[depth][moves_made];
+                    if constexpr (is_pv)
+                        reduction -= 1;
+
+                    reduction = Clamp(reduction, 0, depth - 2);
                 }
+               
+                score = -PVS<NOT_PV>(pos, -alpha - 1, -alpha, depth-1-reduction, params);
+                if (score > alpha && score < beta) // always false in zero-window
+                    score = -PVS<PV_NODE>(pos, -beta, -alpha, depth - 1, params);
             }
             pos.UndoMove();
-            nodes_visited++;
             moves_made++;
+            nodes_visited++;
+
             if (score > best_score) {
-                if (score >= beta) {
-                    STATS(num_fail_high++);
-                    g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score, ply, params.uci_stop_flag);
-                    if (!in_check && move::IsQuiet(move)) {
-                        history_table.Update(pos.SideToPlay(), move::FromSquare(move), move::ToSquare(move), depth);
-                        killers.Put(move, ply);
-                    }
-                    return score;
-                }
                 best_score = score;
                 best_move = move;
             }
+
+            if (score > alpha) {
+                if (score >= beta) {
+                    STATS(num_fail_high++); STATS(num_fail_high_first++);    
+                    if (!in_check && move::IsQuiet(move)) {
+                        killers.Put(move, ply);
+                    }
+                    g_trans_table.Put(pos_key, NodeType::LOWERBOUND, depth, move, score, ply, params.uci_stop_flag);
+                    return score;
+                }
+                ANKA_ASSERT(is_pv);
+                alpha = score;
+            }
+
             if (params.uci_stop_flag)
                 return best_score;
         }

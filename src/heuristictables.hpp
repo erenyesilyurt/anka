@@ -4,30 +4,6 @@
 
 namespace anka
 {
-    struct HistoryTable
-    {
-        int history[NUM_SIDES][64][64]{};
-
-        void Clear()
-        {
-            for (Side color : {WHITE, BLACK}) {
-                for (Square fr = 0; fr < 64; fr++) {
-                    for (Square to = 0; to < 64; to++) {
-                        history[color][fr][to] = 0;
-                    }
-                }
-            }
-        }
-
-        force_inline void Update(Side color, Square from, Square to, int depth)
-        {
-            history[color][from][to] += depth * depth;
-            if (history[color][from][to] > 20'000) {
-                history[color][from][to] /= 2;
-            }
-        }
-    };
-
     struct KillersTable
     {
         Move moves[MAX_PLY][2]{};

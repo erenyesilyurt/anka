@@ -38,7 +38,7 @@ namespace anka {
 			free(m_table);
 		}
 
-		inline void Clear()
+		void Clear()
 		{
 			memset(m_table, 0, m_table_size);
 			m_current_age = 0;
@@ -46,7 +46,7 @@ namespace anka {
 			m_num_queries = 0;
 		}
 
-		inline bool Init(size_t hash_size)
+		bool Init(size_t hash_size)
 		{
 			if (hash_size < EngineSettings::MIN_HASH_SIZE || hash_size > EngineSettings::MAX_HASH_SIZE)
 				return false;
@@ -77,7 +77,7 @@ namespace anka {
 			}
 		}
 
-		inline bool Get(u64 pos_hash, TTRecord &result, int ply)
+		bool Get(u64 pos_hash, TTRecord &result, int ply)
 		{
 			ANKA_ASSERT(pos_hash != C64(0));
 			STATS(m_num_queries++);
@@ -101,12 +101,12 @@ namespace anka {
 			return false;
 		}
 
-		inline void Put(u64 pos_hash, NodeType type, int depth, Move best_move, i16 value, int ply, bool timeup)
+		void Put(u64 pos_hash, NodeType type, int depth, Move best_move, i16 value, int ply, bool timeup)
 		{
 			if (timeup)
 				return;
 			ANKA_ASSERT(pos_hash != C64(0));
-			ANKA_ASSERT(best_move != 0);
+			//ANKA_ASSERT(best_move != 0);
 			ANKA_ASSERT(depth <= MAX_DEPTH && depth >= 1);
 
 			size_t bucket_index = pos_hash & (m_num_buckets - 1);
@@ -147,7 +147,7 @@ namespace anka {
 		}
 
 		// extracts the principal variation moves into pv. returns the number of extracted moves.
-		inline int ExtractPV(GameState &pos, Move root_best_move, Move *pv, int max_pv_length)
+		int ExtractPV(GameState &pos, Move root_best_move, Move *pv, int max_pv_length)
 		{
 			MoveList<256> list;
 			TTRecord node;
@@ -185,18 +185,18 @@ namespace anka {
 			return moves_made;
 		}
 
-		inline void IncrementAge()
+		void IncrementAge()
 		{
 			m_current_age = ++m_current_age & 0x3f;
 		}
 
-		inline int GetAge() const 
+		int GetAge() const 
 		{
 			return m_current_age;
 		}
 
 		#ifdef STATS_ENABLED
-		inline void PrintStatistics() const
+		void PrintStatistics() const
 		{
 			u64 n_used_buckets = 0;
 			u64 n_total_used_cells = 0;

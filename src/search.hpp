@@ -22,7 +22,7 @@ namespace anka {
         u64 fh = C64(1);
         u64 fh_f = C64(1);
 
-        void Print(GameState& pos) const
+        void Print(GameState& pos, int pv_length) const
         {
             char move_str[6];
 
@@ -42,9 +42,7 @@ namespace anka {
                 printf("cp %d pv ", best_score);
             }
 
-            for (int i = 0; i <= MAX_DEPTH; i++) {
-                if (pv[i] == 0)
-                    break;
+            for (int i = 0; i < pv_length; i++) {
                 move::ToString(pv[i], move_str);
                 printf("%s ", move_str);
             }
@@ -53,6 +51,7 @@ namespace anka {
             STATS(printf("Order Quality: %.2f\n", fh_f / (float)fh));
         }
     };
+
 
     struct SearchParams {
         bool infinite = false;
@@ -79,19 +78,19 @@ namespace anka {
 
     struct SearchStack {
         MoveList<256> move_list[MAX_PLY + 1]{};
-        Move pv[(MAX_DEPTH + 1) * (MAX_DEPTH + 1)]{};
     };
 
 	class SearchInstance {
     public:
         int Quiescence(GameState& pos, int alpha, int beta, SearchParams& params);
-        template <bool pruning = true>
-        int PVS(GameState& pos, int alpha, int beta, int depth, bool is_pv, SearchParams& params);
+        template <bool is_pv>
+        int PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
 	public:
         u64 nodes_visited = C64(0);
         u64 num_fail_high = C64(1);
         u64 num_fail_high_first = C64(1);
         long long last_timecheck = 0;
+        bool nmp_enabled = true;
     private:
         void CheckTime(SearchParams& params);
 	}; // SearchInstance

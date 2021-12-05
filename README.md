@@ -45,4 +45,4 @@ prefixed with anka_.
 ## Thanks to
 - [Bluefever Software](https://www.youtube.com/user/BlueFeverSoft) for their video series on Vice, which introduced me to chess programming
 - [The Chessprogramming Wiki](https://www.chessprogramming.org/) and the chess programming community
-- The authors of open source chess engines such as [Lazer](https://github.com/jeffreyan11/laser-chess-engine), [Xiphos](https://github.com/milostatarevic/xiphos), [CPWEngine](https://github.com/nescitus/cpw-engine), [Rubichess](https://github.com/Matthies/RubiChess) and others
+- The authors of open source chess engines such as [Laser](https://github.com/jeffreyan11/laser-chess-engine), [Xiphos](https://github.com/milostatarevic/xiphos), [CPWEngine](https://github.com/nescitus/cpw-engine), [Rubichess](https://github.com/Matthies/RubiChess) and others
