@@ -3,42 +3,17 @@
 #include <math.h>
 #include <array>
 
-namespace anka {
-
-	struct EvalScore {
-		int phase_score[NUM_PHASES]{};
-	};
-
-	struct EvalData {
-		int material[NUM_PHASES][NUM_SIDES] {};
-		int mobility[NUM_PHASES][NUM_SIDES]{};
-		int pst[NUM_PHASES][NUM_SIDES]{};
-		int pawn_structure[NUM_PHASES][NUM_SIDES]{};
-		int bishop_pair[NUM_PHASES][NUM_SIDES]{};
-		int phase{};
-		int tempo[NUM_SIDES]{};
-		int score[NUM_PHASES]{};
-
-		void CalculateScore()
-		{
-			for (int phase = MIDGAME; phase < NUM_PHASES; phase++) {
-				score [phase] = (material[phase][WHITE] - material[phase][BLACK])
-					+ (mobility[phase][WHITE] - mobility[phase][BLACK])
-					+ (pst[phase][WHITE] - pst[phase][BLACK])
-					+ (pawn_structure[phase][WHITE] - pawn_structure[phase][BLACK])
-					+ (bishop_pair[phase][WHITE] - bishop_pair[phase][BLACK]);
-			}
-		}
-
 #ifdef EVAL_TUNING
 #define eval_param int
 #else
 #define eval_param static constexpr int
 #endif
 
-	};
+namespace anka {
 
-	extern EvalData g_eval_data;
+	struct EvalScore {
+		int phase_score[NUM_PHASES]{};
+	};
 
 
 	struct EvalParams {
@@ -209,19 +184,19 @@ namespace anka {
 				for (Square sq = A1; sq <= H8; sq++) {
 					Square pst_sq = (color == WHITE ? sq ^ 56 : sq);
 
-					PST_mg[color][PAWN][sq] = pawns_pst_mg[pst_sq];
-					PST_mg[color][KNIGHT][sq] = knights_pst_mg[pst_sq];
-					PST_mg[color][BISHOP][sq] = bishops_pst_mg[pst_sq];
-					PST_mg[color][ROOK][sq] = rooks_pst_mg[pst_sq];
-					PST_mg[color][QUEEN][sq] = queens_pst_mg[pst_sq];
-					PST_mg[color][KING][sq] = king_pst_mg[pst_sq];
+					PST_mg[color][PAWN][sq] = pawns_pst_mg[pst_sq] + piece_values[MG][PAWN];
+					PST_mg[color][KNIGHT][sq] = knights_pst_mg[pst_sq] + piece_values[MG][KNIGHT];
+					PST_mg[color][BISHOP][sq] = bishops_pst_mg[pst_sq] + piece_values[MG][BISHOP];
+					PST_mg[color][ROOK][sq] = rooks_pst_mg[pst_sq] + piece_values[MG][ROOK];
+					PST_mg[color][QUEEN][sq] = queens_pst_mg[pst_sq] + piece_values[MG][QUEEN];
+					PST_mg[color][KING][sq] = king_pst_mg[pst_sq] + piece_values[MG][KING];
 
-					PST_eg[color][PAWN][sq] = pawns_pst_eg[pst_sq];
-					PST_eg[color][KNIGHT][sq] = knights_pst_eg[pst_sq];
-					PST_eg[color][BISHOP][sq] = bishops_pst_eg[pst_sq];
-					PST_eg[color][ROOK][sq] = rooks_pst_eg[pst_sq];
-					PST_eg[color][QUEEN][sq] = queens_pst_eg[pst_sq];
-					PST_eg[color][KING][sq] = king_pst_eg[pst_sq];
+					PST_eg[color][PAWN][sq] = pawns_pst_eg[pst_sq] + piece_values[EG][PAWN];
+					PST_eg[color][KNIGHT][sq] = knights_pst_eg[pst_sq] + piece_values[EG][KNIGHT];
+					PST_eg[color][BISHOP][sq] = bishops_pst_eg[pst_sq] + piece_values[EG][BISHOP];
+					PST_eg[color][ROOK][sq] = rooks_pst_eg[pst_sq] + piece_values[EG][ROOK];
+					PST_eg[color][QUEEN][sq] = queens_pst_eg[pst_sq] + piece_values[EG][QUEEN];
+					PST_eg[color][KING][sq] = king_pst_eg[pst_sq] + piece_values[EG][KING];
 				}
 			}
 		}
@@ -322,10 +297,10 @@ namespace anka {
 
 
 		#define WRITE_FEATURE(feature, file_stream) \
-			do {const int* p = feature[MIDGAME]; \
+			do {const int* p = feature[MG]; \
 			fprintf(file_stream, "int " STRINGIFY(feature) "[NUM_PHASES][8] = {\n\t"); \
 			fprintf(file_stream, "{%d, %d, %d, %d, %d, %d, %d, %d},\n\t", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]); \
-			p = feature[ENDGAME]; \
+			p = feature[EG]; \
 			fprintf(file_stream, "{%d, %d, %d, %d, %d, %d, %d, %d}\n};\n\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]); } while (0)
 
 		void WriteParamsToFile(const char *file_name)

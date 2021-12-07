@@ -17,7 +17,7 @@ namespace anka {
 	enum { FILE_A = 0, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NONE }; // File
 	enum { NO_PIECE = 0, PAWN = 2, KNIGHT, BISHOP, ROOK, QUEEN, KING, ALL_PIECES }; // Piece Type (STARTS FROM PAWN = 2)
 	enum Direction { EAST = 1, WEST = -1, NORTH = 8, NORTHEAST = 9, NORTHWEST = 7, SOUTH = -8, SOUTHEAST = -7, SOUTHWEST = -9 };
-	enum Phase {MIDGAME, ENDGAME, NUM_PHASES};
+	enum Phase {MG, EG, NUM_PHASES};
 
 	// Least endian mapping, A1 = 0, B1 = 1, ... H8 = 63
 	enum // Square

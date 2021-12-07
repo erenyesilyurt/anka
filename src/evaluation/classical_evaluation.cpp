@@ -38,72 +38,83 @@ namespace anka {
 			}
 
 			int num_attacks = bitboard::PopCount(att);
-			score.phase_score[MIDGAME] = g_eval_params.mobility_weights[MIDGAME][piece] * num_attacks;
-			score.phase_score[ENDGAME] = g_eval_params.mobility_weights[ENDGAME][piece] * num_attacks;
+			score.phase_score[MG] = g_eval_params.mobility_weights[MG][piece] * num_attacks;
+			score.phase_score[EG] = g_eval_params.mobility_weights[EG][piece] * num_attacks;
 			return score;
 		}
 
 		template<Side color>
-		void EvaluatePawns(const GameState& pos)
+		void EvaluatePawns(Bitboard ally_pawns, Bitboard opponent_pawns, int *scores)
 		{
-			constexpr Side opposite_color = color ^ 1;
-			Bitboard ally_pawns = pos.Pieces<color, PAWN>();
-			Bitboard opponent_pawns = pos.Pieces<opposite_color, PAWN>();
-
 			Bitboard pawns = ally_pawns;
+			int mg = 0, eg = 0;
+
 			while (pawns) {
 				Square sq = bitboard::BitScanForward(pawns);
-				g_eval_data.material[MIDGAME][color] += g_eval_params.piece_values[MIDGAME][PAWN];
-				g_eval_data.material[ENDGAME][color] += g_eval_params.piece_values[ENDGAME][PAWN];
-				g_eval_data.pst[MIDGAME][color] += g_eval_params.PST_mg[color][PAWN][sq];
-				g_eval_data.pst[ENDGAME][color] += g_eval_params.PST_eg[color][PAWN][sq];
 
+				mg += g_eval_params.PST_mg[color][PAWN][sq];
+				eg += g_eval_params.PST_eg[color][PAWN][sq];
 
-				//// check if passed pawn
+				//// check for passed pawns
 				if ((attacks::PawnFrontSpan(sq, color) & opponent_pawns) == 0) {
 					int rank = GetRank(sq);
 					if constexpr (color == BLACK)
 						rank = 7 - rank;
-					g_eval_data.pawn_structure[MIDGAME][color] += g_eval_params.passed_bonus[MIDGAME][rank];
-					g_eval_data.pawn_structure[ENDGAME][color] += g_eval_params.passed_bonus[ENDGAME][rank];
-
+					mg += g_eval_params.passed_bonus[MG][rank];
+					eg += g_eval_params.passed_bonus[EG][rank];
 				}
 
-				//// check if isolated pawn
+				//// check for isolated pawns
 				int file = GetFile(sq);
 				if ((attacks::AdjacentFiles(file) & ally_pawns) == 0) {
-					g_eval_data.pawn_structure[MIDGAME][color] -= g_eval_params.isolated_penalty[MIDGAME][file];
-					g_eval_data.pawn_structure[ENDGAME][color] -= g_eval_params.isolated_penalty[ENDGAME][file];
+					mg -= g_eval_params.isolated_penalty[MG][file];
+					eg -= g_eval_params.isolated_penalty[EG][file];
 				}
 
 				pawns &= pawns - 1;
+			}
+
+			if constexpr (color == WHITE) {
+				scores[0] += mg;
+				scores[1] += eg;
+			}
+			else {
+				scores[0] -= mg;
+				scores[1] -= eg;
 			}
 		}
 
 
 		template<Side color>
-		int EvaluatePieces(const GameState& pos)
+		int EvaluatePieces(const GameState& pos, int* scores)
 		{
 
 			int phase_change = 0;
+			int mg = 0, eg = 0;
 			Bitboard pieces = pos.Pieces<color>() ^ pos.Pieces<color, PAWN>();
 			while (pieces) {
 				Square sq = bitboard::BitScanForward(pieces);
 				auto piece = pos.GetPiece(sq);
 				phase_change += p_phase[piece];
 
-				g_eval_data.material[MIDGAME][color] += g_eval_params.piece_values[MIDGAME][piece];
-				g_eval_data.material[ENDGAME][color] += g_eval_params.piece_values[ENDGAME][piece];
-
-				g_eval_data.pst[MIDGAME][color] += g_eval_params.PST_mg[color][piece][sq];
-				g_eval_data.pst[ENDGAME][color] += g_eval_params.PST_eg[color][piece][sq];
+				mg += g_eval_params.PST_mg[color][piece][sq];
+				eg += g_eval_params.PST_eg[color][piece][sq];
 
 				EvalScore piece_mobility = PieceMobility(piece, sq, pos.Occupancy(), pos.Pieces<color>());
-				g_eval_data.mobility[MIDGAME][color] += piece_mobility.phase_score[MIDGAME];
-				g_eval_data.mobility[ENDGAME][color] += piece_mobility.phase_score[ENDGAME];
+				mg += piece_mobility.phase_score[MG];
+				eg += piece_mobility.phase_score[EG];
 
 
 				pieces &= pieces - 1;
+			}
+
+			if constexpr (color == WHITE) {
+				scores[0] += mg;
+				scores[1] += eg;
+			}
+			else {
+				scores[0] -= mg;
+				scores[1] -= eg;
 			}
 
 			return phase_change;
@@ -114,59 +125,57 @@ namespace anka {
 	// Returns a score in centipawns.
     int GameState::ClassicalEvaluation() const
     {
-		g_eval_data = {};
-
-		int phase = MAX_PHASE;
-		phase -= EvaluatePieces<WHITE>(*this);
-		phase -= EvaluatePieces<BLACK>(*this);
-
 		// Insufficient Material Draws: KvK, KNvK, KBvK
-		if (Pawns() == C64(0)) {
-			int piece_material = g_eval_data.material[ENDGAME][WHITE] + g_eval_data.material[ENDGAME][BLACK];
-			if (piece_material <= g_eval_params.piece_values[ENDGAME][BISHOP]) {
+		if (m_piecesBB[PAWN] == 0) {
+			int n_total = bitboard::PopCount(m_occupation);
+			if (n_total == 2 || (n_total == 3 && (m_piecesBB[KNIGHT] | m_piecesBB[BISHOP])))
 				return 0;
-			}
-		}	
+		}
+
+		int scores[NUM_PHASES]{};
+		int phase = MAX_PHASE;
+
+		Bitboard w_pawns = Pieces<WHITE, PAWN>();
+		Bitboard b_pawns = Pieces<BLACK, PAWN>();
+
+		EvaluatePawns<WHITE>(w_pawns, b_pawns, scores);
+		EvaluatePawns<BLACK>(b_pawns, w_pawns, scores);
+
+
+		phase -= EvaluatePieces<WHITE>(*this, scores);
+		phase -= EvaluatePieces<BLACK>(*this, scores);
+	
+
 
 		// bishop pair bonus
-		int num_white_bishops = bitboard::PopCount(Pieces<WHITE, BISHOP>());
-		int num_black_bishops = bitboard::PopCount(Pieces<BLACK, BISHOP>());
-
-		if (num_white_bishops > 1) {
-			g_eval_data.bishop_pair[MIDGAME][WHITE] += g_eval_params.bishop_pair_bonus[MIDGAME];
-			g_eval_data.bishop_pair[ENDGAME][WHITE] += g_eval_params.bishop_pair_bonus[ENDGAME];
+		int n_white_bishops = bitboard::PopCount(Pieces<WHITE, BISHOP>());
+		int n_black_bishops= bitboard::PopCount(Pieces<BLACK, BISHOP>());
+		if (n_white_bishops > 1) {
+			scores[MG] += g_eval_params.bishop_pair_bonus[MG];
+			scores[EG] += g_eval_params.bishop_pair_bonus[EG];
+		}
+		if (n_black_bishops > 1) {
+			scores[MG] -= g_eval_params.bishop_pair_bonus[MG];
+			scores[EG] -= g_eval_params.bishop_pair_bonus[EG];
 		}
 
-		if (num_black_bishops > 1) {
-			g_eval_data.bishop_pair[MIDGAME][BLACK] += g_eval_params.bishop_pair_bonus[MIDGAME];
-			g_eval_data.bishop_pair[ENDGAME][BLACK] += g_eval_params.bishop_pair_bonus[ENDGAME];
-		}
 
-
-
-		EvaluatePawns<WHITE>(*this);
-		EvaluatePawns<BLACK>(*this);
-		
-		g_eval_data.CalculateScore();
 
 		// Map phase to [0-256]
 		phase = ((phase << 8) + (MAX_PHASE >> 1)) / MAX_PHASE; 	// (phase * 256 + (MAX_PHASE / 2)) / MAX_PHASE
-		g_eval_data.phase = phase;
 
 		// Interpolate the score between middle game and end game.
 		// (phase = 0 at the beginning and phase = 256 at the endgame.)
-		int result = ((g_eval_data.score[MIDGAME] * (256 - phase)) + (g_eval_data.score[ENDGAME] * phase)) >> 8;
+		int result = ((scores[MG] * (256 - phase)) + (scores[EG] * phase)) >> 8;
 
 
 
 		if (m_side == WHITE) {
 			result += g_eval_params.tempo_bonus;
-			g_eval_data.tempo[WHITE] = g_eval_params.tempo_bonus;
 
 		}
 		if (m_side == BLACK) {
 			result -= g_eval_params.tempo_bonus;
-			g_eval_data.tempo[BLACK] = g_eval_params.tempo_bonus;
 			result = (-result);
 		}
 

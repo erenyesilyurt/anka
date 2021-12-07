@@ -12,7 +12,7 @@
 //
 //
 //
-//static constexpr double K = 1.68;
+//static constexpr double K = 1.00;
 //static constexpr double SIG_CONSTANT = (-K / 400.0);
 //
 //typedef std::array<int, anka::EvalParams::NUM_PARAMS> Solution;
@@ -30,7 +30,6 @@
 //	// Global structures
 //	TranspositionTable g_trans_table;
 //	EvalParams g_eval_params;
-//	EvalData g_eval_data;
 //}
 //
 //// White respective evaluation of the position

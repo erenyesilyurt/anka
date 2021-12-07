@@ -20,8 +20,6 @@ typedef int16_t i16;
 
 //#define STATS_ENABLED
 
-//#define EVAL_DEBUG
-
 #ifdef STATS_ENABLED
 #define STATS(x) \
 	do {x;} while (0)

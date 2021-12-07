@@ -12,6 +12,7 @@ namespace anka {
 		Bitboard _pawn_front_spans[2][64];
 		Bitboard _in_between[64][64];
 		Bitboard _adjacent_files[8];
+		Bitboard _file_masks[8];
 
 
 		template <int dir>
@@ -227,6 +228,15 @@ namespace anka {
 
 		}
 
+		static void InitFileMasks()
+		{
+			for (Square sq = A1; sq <= H1; sq++) {
+				Bitboard b = 0;
+				bitboard::SetBit(b, sq);
+				_file_masks[sq] = Fill<NORTH>(b);
+			}
+		}
+
 		static void InitInBetween()
 		{
 			for (int i = 0; i < 64; i++) {
@@ -282,6 +292,7 @@ namespace anka {
 			InitPawnAttacks();
 			InitPawnFrontSpans();
 			InitAdjacentFiles();
+			InitFileMasks();
 			InitInBetween();
 		}
 	} // namespace attacks

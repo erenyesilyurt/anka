@@ -286,26 +286,6 @@ namespace anka {
 	{
 		int eval_score = pos.ClassicalEvaluation();
 		printf("Static eval: %+.2f (%+d cp)\n", eval_score / 100.0f, eval_score);
-
-		#ifdef EVAL_DEBUG
-		for (int phase = 0; phase < 2; phase++) {
-			if (phase == MIDGAME)
-				printf("\nMIDGAME EVAL\n");
-			else
-				printf("\nENDGAME EVAL\n");
-
-			printf("            WHITE \tBLACK\n");
-			printf("Material:    %d    \t%d\n", g_eval_data.material[phase][WHITE], g_eval_data.material[phase][BLACK]);
-			printf("Mobility:    %d    \t%d\n", g_eval_data.mobility[phase][WHITE], g_eval_data.mobility[phase][BLACK]);
-			printf("PST Bonus:   %d    \t%d\n", g_eval_data.pst[phase][WHITE], g_eval_data.pst[phase][BLACK]);
-			printf("Bshp pair:   %d    \t%d\n", g_eval_data.bishop_pair[phase][WHITE], g_eval_data.bishop_pair[phase][BLACK]);
-			printf("Pwn struct:  %d    \t%d\n", g_eval_data.pawn_structure[phase][WHITE], g_eval_data.pawn_structure[phase][BLACK]);
-		}
-
-		printf("Tempo: W: %d B: %d\n", g_eval_data.tempo[WHITE], g_eval_data.tempo[BLACK]);
-		printf("Phase: %d\n", g_eval_data.phase);
-		#endif // EVAL_DEBUG
-
 	}
 
 }

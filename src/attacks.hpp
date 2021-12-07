@@ -156,6 +156,7 @@ namespace anka {
 		extern Bitboard _pawn_attacks[2][64];
 		extern Bitboard _pawn_front_spans[2][64];
 		extern Bitboard _adjacent_files[8];
+		extern Bitboard _file_masks[8];
 		extern Bitboard _in_between[64][64];
 
 		void InitAttacks();
@@ -221,6 +222,12 @@ namespace anka {
 		force_inline Bitboard AdjacentFiles(File file)
 		{
 			return _adjacent_files[file];
+		}
+
+		// return files adjacent to 'file'
+		force_inline Bitboard FileMasks(File file)
+		{
+			return _file_masks[file];
 		}
 
 		// return squares in between 'from' and 'to'
