@@ -83,7 +83,7 @@ namespace anka {
 	class SearchInstance {
     public:
         int Quiescence(GameState& pos, int alpha, int beta, SearchParams& params);
-        template <bool is_pv>
+        template <bool is_pv, bool is_root=false>
         int PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
 	public:
         u64 nodes_visited = C64(0);
@@ -91,6 +91,7 @@ namespace anka {
         u64 num_fail_high_first = C64(1);
         long long last_timecheck = 0;
         bool nmp_enabled = true;
+        Move root_best_move = move::NO_MOVE;
     private:
         void CheckTime(SearchParams& params);
 	}; // SearchInstance

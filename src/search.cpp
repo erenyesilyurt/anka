@@ -26,32 +26,6 @@ namespace anka {
                 }
             }
         }
-
-        // returns true if there are no illegal moves in pv
-        bool ValidatePV(GameState& pos, const Move* pv)
-        {
-            MoveList<256> move_list;
-            int moves_made = 0;
-            bool success = true;
-            while (Move move = pv[moves_made]) {
-                move_list.GenerateLegalMoves(pos);
-                if (move_list.Find(move)) {
-                    pos.MakeMove(move);
-                    moves_made++;
-                }
-                else {
-                    char move_str[6];
-                    move::ToString(move, move_str);
-                    fprintf(stderr, "Illegal move in pv: %s\n", move_str);
-                    success = false;
-                    break;
-                }
-            }
-
-            while (moves_made--)
-                pos.UndoMove();
-            return success;
-        }
     }
 
     bool InitSearch()
@@ -99,9 +73,11 @@ namespace anka {
         // check if there are no legal moves / only one legal move in the position
         {
             MoveList<256> move_list;
-            move_list.GenerateLegalMoves(pos);
+            bool in_check = move_list.GenerateLegalMoves(pos);
 
             if (move_list.length == 0) {
+                if (in_check)
+                    printf("info depth 0 score mate 0\n");
                 skip_search = true;
             }
             else {
@@ -128,15 +104,19 @@ namespace anka {
                 instance.last_timecheck = Timer::GetTimeInMs();
 
                 auto iter_start_time = instance.last_timecheck;
-                int best_score = instance.PVS<PV_NODE>(pos, -ANKA_INFINITE, ANKA_INFINITE, d, params);
+                int best_score = instance.PVS<PV_NODE, true>(pos, -ANKA_INFINITE, ANKA_INFINITE, d, params);
                 auto iter_end_time = Timer::GetTimeInMs();
                 auto delta_time = iter_end_time - iter_start_time;
 
-                int pv_length = g_trans_table.ExtractPV(pos, 0, principal_variation, MAX_PV_LENGTH);
-                best_move = principal_variation[0];
+
                 if (params.uci_stop_flag) {
                     break;
                 }
+
+                best_move = instance.root_best_move;
+                int pv_length = g_trans_table.ExtractPV(pos, best_move, principal_variation, MAX_PV_LENGTH);
+                //best_move = principal_variation[0];
+                
 
                 result.best_score = best_score;
                 result.depth = d;
@@ -151,7 +131,6 @@ namespace anka {
 
 
                 result.Print(pos, pv_length);
-                ANKA_ASSERT(ValidatePV(pos, principal_variation));
                 
                 if (params.check_timeup) {
                     if (delta_time > params.remaining_time * 5 >> 3) {
@@ -159,10 +138,10 @@ namespace anka {
                     }
                 }
             }
-
-            // don't stop the search in infinite search mode unless a stop command is received
-            while (params.infinite && !params.uci_stop_flag);
         }
+
+        // don't stop the search in infinite search mode unless a stop command is received
+        while (params.infinite && !params.uci_stop_flag);
 
         if (best_move > 0) {
             move::ToString(best_move, best_move_str);
@@ -237,7 +216,7 @@ namespace anka {
         return alpha;
     }
 
-    template<bool is_pv>
+    template<bool is_pv, bool is_root>
     int SearchInstance::PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params)
     {
         ANKA_ASSERT(beta > alpha);
@@ -260,13 +239,15 @@ namespace anka {
         u64 pos_key = pos.PositionKey();
         TTRecord probe_result;
         Move hash_move = 0;
-        
+        int hash_eval = 0;
+        NodeType hash_node_type = NodeType::NONE;
         if (g_trans_table.Get(pos_key, probe_result, ply)) {
             hash_move = probe_result.move;
             if constexpr (!is_pv) {
-                auto node_type = probe_result.GetNodeType();
+                hash_eval = probe_result.value;
+                hash_node_type = probe_result.GetNodeType();
                 if (probe_result.depth >= depth) {
-                    switch (node_type) {
+                    switch (hash_node_type) {
                     case NodeType::EXACT: {
                         return probe_result.value;
                     }
@@ -295,11 +276,24 @@ namespace anka {
             }
         }
 
-        
+
         if constexpr (!is_pv) {
             if (!in_check) {
                 if (pos.AllyNonPawnPieces() > 0) {
-                    int eval = pos.ClassicalEvaluation();
+                    int eval = 0;
+                    if (hash_node_type == NodeType::EXACT) {
+                        eval = hash_eval;
+                    }
+                    else if (hash_node_type == NodeType::LOWERBOUND) {
+                        eval = Max(pos.ClassicalEvaluation(), hash_eval);
+                    }
+                    else if (hash_node_type == NodeType::UPPERBOUND) {
+                        eval = Min(pos.ClassicalEvaluation(), hash_eval);
+                    }
+                    else {
+                        eval = pos.ClassicalEvaluation();
+                    }
+
                     auto eval_margin = eval - beta;
                     // Static Null Move Pruning (Reverse Futility)
                     if (depth < 7 && eval_margin >= 75 * depth) {
@@ -338,7 +332,7 @@ namespace anka {
             }
         }
 
-        
+        s_stack->move_list[ply].GenerateLegalMoves(pos);
         int moves_made = 0;
         Move best_move = move::NO_MOVE;
         int best_score = -ANKA_INFINITE;
@@ -404,6 +398,9 @@ namespace anka {
             g_trans_table.Put(pos_key, NodeType::UPPERBOUND, depth, best_move, best_score, ply, params.uci_stop_flag);
         }
 
+        if constexpr (is_root) {
+            root_best_move = best_move;
+        }
         return best_score;
     }
 }

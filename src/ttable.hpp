@@ -8,7 +8,7 @@
 #include <inttypes.h>
 namespace anka {
 
-	enum class NodeType { EXACT, UPPERBOUND, LOWERBOUND };
+	enum class NodeType { EXACT, UPPERBOUND, LOWERBOUND, NONE };
 
 	// Each record is 12 bytes
 	struct TTRecord {
@@ -152,9 +152,9 @@ namespace anka {
 			MoveList<256> list;
 			TTRecord node;
 
-			//pv[0] = root_best_move;
-			//pos.MakeMove(root_best_move);
-			int moves_made = 0;
+			pv[0] = root_best_move;
+			pos.MakeMove(root_best_move);
+			int moves_made = 1;
 
 			while (true) {
 				u64 pos_key = pos.PositionKey();
