@@ -28,7 +28,7 @@ void anka::GameState::Clear()
 	m_root_ply_index = 0;
 }
 
-// BUG: trailing whitespaces in fens cause a crash
+
 bool anka::GameState::LoadPosition(std::string fen)
 {
 	if (fen.empty()) {
@@ -169,6 +169,43 @@ bool anka::GameState::LoadPosition(std::string fen)
 	ANKA_ASSERT(Validate());
 
 	return true;
+}
+
+void anka::GameState::ToFen(char* fen)
+{
+	constexpr char PieceToChar[2][8]{ {'-', '-', 'P', 'N', 'B', 'R', 'Q', 'K'},
+									  {'-', '-', 'p', 'n', 'b', 'r', 'q', 'k'} };
+	constexpr char ColorToChar[2]{ 'w', 'b' };
+
+
+	for (int r = RANK_EIGHT; r >= RANK_ONE; r--) {
+		int stride = 0;
+		for (int f = FILE_A; f <= FILE_H; f++) {
+			Square sq = RankFileToSquare(r, f);
+			auto piece = m_board[sq];
+			Side piece_color = bitboard::BitIsSet(m_piecesBB[BLACK], sq);
+			if (piece == NO_PIECE) {
+				stride++;
+				continue;
+			}
+
+			if (stride != 0) {
+				*fen++ = '0' + stride;
+				stride = 0;
+			}
+
+			*fen++ = PieceToChar[piece_color][piece];
+		}
+		if (stride != 0)
+			*fen++ = '0' + stride;
+		*fen++ = '/';
+	}
+	*(fen - 1) = ' ';
+
+	*fen++ = ColorToChar[m_side];
+	*fen++ = ' ';
+
+	sprintf(fen, "%s %s %d %d\0", CastlingRightsToString(m_castling_rights), SquareToString(m_ep_target), m_halfmove_clock, 1 + (m_root_ply_index + m_ply) / 2);
 }
 
 

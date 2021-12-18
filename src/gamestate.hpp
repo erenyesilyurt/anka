@@ -180,7 +180,7 @@ namespace anka {
 		force_inline Move LastMove() const { return m_state_history[m_ply - 1].move_made; }
 		force_inline void SetRootPlyIndex() 
 		{
-			m_root_ply_index = m_ply;
+			m_root_ply_index += m_ply;
 			m_ply = 0; 
 		}
 
@@ -220,6 +220,7 @@ namespace anka {
 		void Clear();
 		bool LoadStartPosition() { return LoadPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 		bool LoadPosition(std::string fen);
+		void ToFen(char* fen);
 
 		Move ParseMove(const char* line) const;
 		void Print() const;
