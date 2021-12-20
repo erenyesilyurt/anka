@@ -18,6 +18,7 @@ namespace anka {
         u64 nps = C64(0);
         int best_score = 0;
         int depth = 0;
+        u64 tb_hits = 0;
         Move* pv = nullptr;
         u64 fh = C64(1);
         u64 fh_f = C64(1);
@@ -26,9 +27,9 @@ namespace anka {
         {
             char move_str[6];
 
-            printf("info depth %d time %lld nodes %" PRIu64 " nps %" PRIu64 " score ",
+            printf("info depth %d time %lld nodes %" PRIu64 " nps %" PRIu64 " tbhits %" PRIu64 " score ",
                 depth, total_time, total_nodes,
-                nps);
+                nps, tb_hits);
 
             if (best_score >= UPPER_MATE_THRESHOLD) {
                 int moves_to_mate = ((ANKA_MATE - best_score) >> 1) + 1;
@@ -87,11 +88,12 @@ namespace anka {
         int PVS(GameState& pos, int alpha, int beta, int depth, SearchParams& params);
 	public:
         u64 nodes_visited = C64(0);
+        u64 tb_hits = 0;
         u64 num_fail_high = C64(1);
         u64 num_fail_high_first = C64(1);
         long long last_timecheck = 0;
-        bool nmp_enabled = true;
         Move root_best_move = move::NO_MOVE;
+        bool nmp_enabled = true;
     private:
         void CheckTime(SearchParams& params);
 	}; // SearchInstance

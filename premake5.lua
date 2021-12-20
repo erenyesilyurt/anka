@@ -24,7 +24,9 @@ workspace "AnkaEngine"
 			"src/**.cpp",
 			"src/**.hpp",
 			"src/evaluation/**.cpp",
-			"src/evaluation/**.hpp"
+			"src/evaluation/**.hpp",
+			"src/external/Pyrrhic/*.c",
+			"src/external/Pyrrhic/*.h"
 		}
 		
 		
@@ -35,7 +37,8 @@ workspace "AnkaEngine"
 		includedirs
 		{
 			"src",
-			"src/evaluation"
+			"src/evaluation",
+			"src/external/Pyrrhic"
 		}
 		
 		filter "configurations:Debug"

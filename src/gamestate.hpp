@@ -42,6 +42,7 @@ namespace anka {
 		
 
 		force_inline Bitboard Occupancy() const { return m_occupation; }
+		force_inline int PieceCount() const { return bitboard::PopCount(m_occupation); }
 
 		template <int side, int piece_type = ALL_PIECES>
 		force_inline Bitboard Pieces() const

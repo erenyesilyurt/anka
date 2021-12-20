@@ -5,13 +5,14 @@
 #include "evaluation.hpp"
 #include "engine_settings.hpp"
 #include "search.hpp"
-
+#include "tbprobe.h"
 
 namespace anka {
 	// Global structures
 	TranspositionTable g_trans_table;
 	EvalParams g_eval_params;
 }
+
 
 int main()
 {
@@ -38,6 +39,7 @@ int main()
 
 	uci::UciLoop();
 
+	tb_free();
 	FreeSearchStack();
 	return 0;
 }

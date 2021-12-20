@@ -1,7 +1,7 @@
 #include "search.hpp"
 #include "util.hpp"
 #include "evaluation.hpp"
-
+#include "tbprobe.h"
 
 namespace anka {
     
@@ -26,6 +26,9 @@ namespace anka {
                 }
             }
         }
+
+        constexpr int TB_WIN_SCORE = 10000;
+
     }
 
     bool InitSearch()
@@ -69,24 +72,75 @@ namespace anka {
         char best_move_str[6];
         Move best_move = move::NO_MOVE;
 
+        
         g_trans_table.IncrementAge();
-        // check if there are no legal moves / only one legal move in the position
-        {
-            MoveList<256> move_list;
-            bool in_check = move_list.GenerateLegalMoves(pos);
 
-            if (move_list.length == 0) {
-                if (in_check)
-                    printf("info depth 0 score mate 0\n");
+        
+        MoveList<256> root_moves;
+        bool in_check = root_moves.GenerateLegalMoves(pos);
+
+        if (root_moves.length == 0) {
+            if (in_check)
+                printf("info depth 0 score mate 0\n");
+            else
+                printf("info depth 0 score cp 0\n");
+            skip_search = true;
+        }
+        else {
+            best_move = root_moves.moves[0].move;
+            if (root_moves.length == 1) {
                 skip_search = true;
             }
-            else {
-                best_move = move_list.moves[0].move;
-                if (move_list.length == 1 || pos.IsDrawn()) {
+        }
+        
+        // Probe tablebase
+        if (!skip_search && pos.PieceCount() <= TB_LARGEST) {
+            auto tb_result = tb_probe_root(pos.WhitePieces(), pos.BlackPieces(), pos.Kings(),
+                pos.Queens(), pos.Rooks(), pos.Bishops(), pos.Knights(), pos.Pawns(),
+                pos.HalfMoveClock(), pos.EnPassantSquare(), !pos.SideToPlay(), NULL);
+
+            if (tb_result != TB_RESULT_CHECKMATE &&
+                tb_result != TB_RESULT_STALEMATE &&
+                tb_result != TB_RESULT_FAILED)
+            {
+                auto wdl = TB_GET_WDL(tb_result);
+                auto from = TB_GET_FROM(tb_result);
+                auto to = TB_GET_TO(tb_result);
+                auto prom = TB_GET_PROMOTES(tb_result);
+
+                PieceType prom_piece = NO_PIECE;
+                if (prom == 1) {
+                    prom_piece = QUEEN;
+                }
+                else if (prom == 2) {
+                    prom_piece = ROOK;
+                }
+                else if (prom == 3) {
+                    prom_piece = BISHOP;
+                }
+                else if (prom == 4) {
+                    prom_piece = KNIGHT;
+                }
+
+                Move tb_move = root_moves.FindTBMove(from, to, prom_piece);
+                if (tb_move) {
+
+                    if (wdl == TB_WIN) {
+                        printf("info depth 0 score cp %d\n", TB_WIN_SCORE);
+                    }
+                    else if (wdl == TB_LOSS) {
+                        printf("info depth 0 score cp %d\n", -TB_WIN_SCORE);
+                    }
+                    else {
+                        printf("info depth 0 score cp 0\n");
+                    }
+
+                    best_move = tb_move;
                     skip_search = true;
                 }
             }
         }
+
 
 
         if (!skip_search) {
@@ -115,11 +169,11 @@ namespace anka {
 
                 best_move = instance.root_best_move;
                 int pv_length = g_trans_table.ExtractPV(pos, best_move, principal_variation, MAX_PV_LENGTH);
-                //best_move = principal_variation[0];
                 
 
                 result.best_score = best_score;
                 result.depth = d;
+                result.tb_hits += instance.tb_hits;
                 result.total_time += delta_time;
                 result.total_nodes += instance.nodes_visited;
                 result.nps = result.total_nodes / (result.total_time / 1000.0);
@@ -221,20 +275,20 @@ namespace anka {
     {
         ANKA_ASSERT(beta > alpha);
         int ply = pos.Ply();
-
-
-        if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
-            CheckTime(params);
-        }
-        
         int old_alpha = alpha;
 
-        if (pos.IsDrawn()) {
-            return 0;
-        }
+        if constexpr (!is_root) {
+            if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
+                CheckTime(params);
+            }
 
-        if (depth <= 0 || depth > MAX_DEPTH)
-            return Quiescence(pos, alpha, beta, params);
+            if (pos.IsDrawn()) {
+                return 0;
+            }
+
+            if (depth <= 0 || depth > MAX_DEPTH)
+                return Quiescence(pos, alpha, beta, params);
+        }
 
         u64 pos_key = pos.PositionKey();
         TTRecord probe_result;
@@ -267,12 +321,32 @@ namespace anka {
         }      
 
         bool in_check = s_stack->move_list[ply].GenerateLegalMoves(pos);
-        if (s_stack->move_list[ply].length == 0) {
-            if (in_check) {
-                return -ANKA_MATE + ply;
+        if constexpr (!is_root) {
+            if (s_stack->move_list[ply].length == 0) {
+                if (in_check) {
+                    return -ANKA_MATE + ply;
+                }
+                else {
+                    return 0; // stalemate
+                }
             }
-            else {
-                return 0; // stalemate
+        
+            if (pos.PieceCount() <= TB_LARGEST && pos.HalfMoveClock() == 0) {
+                auto wdl = tb_probe_wdl(pos.WhitePieces(), pos.BlackPieces(), pos.Kings(), pos.Queens(),
+                    pos.Rooks(), pos.Bishops(), pos.Knights(), pos.Pawns(),
+                    pos.EnPassantSquare(), !pos.SideToPlay());
+                if (wdl != TB_RESULT_FAILED) {
+                    tb_hits++;
+                    if (wdl == TB_WIN) {
+                        return TB_WIN_SCORE - ply;
+                    }
+                    else if (wdl == TB_LOSS) {
+                        return -TB_WIN_SCORE + ply;
+                    }
+                    else {
+                        return 0;
+                    }
+                }
             }
         }
 

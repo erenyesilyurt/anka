@@ -52,9 +52,9 @@ namespace anka {
 		// returns the index of LS1B and clears that bit
 		force_inline int PopBit(u64& bitboard)
 		{
-			int bit_index = BitScanForward(bitboard);
-			ClearBit(bitboard, bit_index);
-			return bit_index;
+			int bit = BitScanForward(bitboard);
+			bitboard &= bitboard - 1;
+			return bit;
 		}
 
 		template<int dir>

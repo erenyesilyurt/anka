@@ -41,7 +41,6 @@
 //	// Global structures
 //	TranspositionTable g_trans_table;
 //	EvalParams g_eval_params;
-//	EvalData g_eval_data;
 //}
 //
 //int main()

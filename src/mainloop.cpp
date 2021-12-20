@@ -1,6 +1,7 @@
 #include "mainloop.hpp"
 #include "search.hpp"
 #include "ttable.hpp"
+#include "tbprobe.h"
 #include <string.h>
 #include <iostream>
 #include <future>
@@ -123,6 +124,7 @@ namespace anka {
 			EngineSettings::DEFAULT_HASH_SIZE,
 			EngineSettings::MIN_HASH_SIZE,
 			EngineSettings::MAX_HASH_SIZE);
+		printf("option name SyzygyPath type string default null\n");
 		printf("uciok\n");
 	}
 
@@ -136,7 +138,7 @@ namespace anka {
 		// skip the next word ("name ")
 		line += 5;
 
-		// ex: setoption name Hash value 64
+		// setoption name Hash value 64
 		if (strncmp(line, "Hash value ", 11) == 0) {
 			line += 11;
 			int size = atoi(line);
@@ -148,6 +150,16 @@ namespace anka {
 				}
 			}
 		}
+
+		// setoption name SyzygyPath value /tb
+		if (strncmp(line, "SyzygyPath value ", 17) == 0) {
+			line += 17;
+			line[strcspn(line, "\n")] = '\0';
+			if (!tb_init(line) || TB_LARGEST <= 0) {
+				fprintf(stderr, "Failed to initialize tablebase or could not find ay TB files\n");
+			}
+		}
+
 	}
 
 	void uci::OnPosition(GameState& pos, char* line)

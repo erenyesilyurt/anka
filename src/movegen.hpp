@@ -87,13 +87,28 @@ namespace anka {
 
 		void PrintMoves() const;
 
-		force_inline bool Find(Move m) const
+		bool Find(Move m) const
 		{
 			for (int i = 0; i < length; i++) {
 				if (m == moves[i].move)
 					return true;
 			}
 			return false;
+		}
+
+		Move FindTBMove(Square from, Square to, PieceType prom) const
+		{
+			for (int i = 0; i < length; i++) {
+				Move m = moves[i].move;
+				if (move::FromSquare(m) != from)
+					continue;
+				if (move::ToSquare(m) != to)
+					continue;
+
+				if (move::PromotedPiece(m) == prom)
+					return m;
+			}
+			return move::NO_MOVE;
 		}
 
 		// generate legal moves. return true if in check
