@@ -25,7 +25,7 @@ workspace "AnkaEngine"
 			"src/**.hpp",
 			"src/evaluation/**.cpp",
 			"src/evaluation/**.hpp",
-			"src/external/Pyrrhic/*.c",
+			"src/external/Pyrrhic/tbprobe.cpp",
 			"src/external/Pyrrhic/*.h"
 		}
 		
