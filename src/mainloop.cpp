@@ -23,14 +23,17 @@ namespace {
 			increment = binc;
 		}
 
-		if (movestogo <= 0) {
+		if (movestogo == 1) {
+			return ((available_time * 3) / 4) - EngineSettings::MOVE_OVERHEAD;
+		}
+		else if (movestogo <= 0) {
 			movestogo = 30;
 		}
 
-
-		available_time += (movestogo / 2)*increment;
-		available_time = available_time / movestogo;
+		available_time += (movestogo / 2) * increment;
+		available_time = available_time / movestogo;	
 		available_time -= EngineSettings::MOVE_OVERHEAD;
+
 		return available_time;
 	}
 }

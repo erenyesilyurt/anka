@@ -168,6 +168,8 @@ namespace anka {
 						pv[moves_made] = node.move;
 						pos.MakeMove(node.move);
 						moves_made++;
+						if (pos.IsDrawn()) // detect repetitions
+							break;
 					}
 					else {
 						break;

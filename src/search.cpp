@@ -4,13 +4,10 @@
 #include "tbprobe.h"
 
 namespace anka {
-    
-    
-
     namespace {
         constexpr int PV_NODE = 1;
         constexpr int NOT_PV= 0;
-        constexpr int nodes_per_time_check = 8191;
+        constexpr int nodes_per_time_check = 2047;
         constexpr int MAX_PV_LENGTH = MAX_DEPTH + 1;
 
         Move principal_variation[MAX_PV_LENGTH]{};
@@ -28,7 +25,6 @@ namespace anka {
         }
 
         constexpr int TB_WIN_SCORE = 10000;
-
     }
 
     bool InitSearch()
@@ -67,15 +63,10 @@ namespace anka {
         for (int i = 0; i < MAX_PV_LENGTH; i++) {
             principal_variation[i] = move::NO_MOVE;
         }
-
-        bool skip_search = false;
-        char best_move_str[6];
-        Move best_move = move::NO_MOVE;
-
-        
         g_trans_table.IncrementAge();
 
-        
+        char best_move_str[6];
+        Move best_move = move::NO_MOVE;       
         MoveList<256> root_moves;
         bool in_check = root_moves.GenerateLegalMoves(pos);
 
@@ -84,17 +75,29 @@ namespace anka {
                 printf("info depth 0 score mate 0\n");
             else
                 printf("info depth 0 score cp 0\n");
-            skip_search = true;
+
+            while (params.infinite && !params.uci_stop_flag);
+            printf("bestmove 0000\n");
+            params.is_searching = false;
+            return;
         }
         else {
-            best_move = root_moves.moves[0].move;
+            SearchInstance instance;
+            int score = instance.PVS<PV_NODE, true>(pos, -ANKA_INFINITE, ANKA_INFINITE, 1, SearchParams{});
+            best_move = instance.root_best_move;
+
+            move::ToString(best_move, best_move_str);
+            printf("info depth 1 score cp %d pv %s\n", score, best_move_str);
             if (root_moves.length == 1) {
-                skip_search = true;
+                while (params.infinite && !params.uci_stop_flag);
+                printf("bestmove %s\n", best_move_str);
+                params.is_searching = false;
+                return;
             }
         }
         
         // Probe tablebase
-        if (!skip_search && pos.PieceCount() <= TB_LARGEST) {
+        if (pos.PieceCount() <= TB_LARGEST) {
             auto tb_result = tb_probe_root(pos.WhitePieces(), pos.BlackPieces(), pos.Kings(),
                 pos.Queens(), pos.Rooks(), pos.Bishops(), pos.Knights(), pos.Pawns(),
                 pos.HalfMoveClock(), pos.EnPassantSquare(), !pos.SideToPlay(), NULL);
@@ -124,89 +127,76 @@ namespace anka {
 
                 Move tb_move = root_moves.FindTBMove(from, to, prom_piece);
                 if (tb_move) {
-
+                    best_move = tb_move;
+                    move::ToString(best_move, best_move_str);
                     if (wdl == TB_WIN) {
-                        printf("info depth 0 score cp %d\n", TB_WIN_SCORE);
+                        printf("info depth 1 score cp %d pv %s\n", TB_WIN_SCORE, best_move_str);
                     }
                     else if (wdl == TB_LOSS) {
-                        printf("info depth 0 score cp %d\n", -TB_WIN_SCORE);
+                        printf("info depth 1 score cp %d pv %s\n", -TB_WIN_SCORE, best_move_str);
                     }
                     else {
-                        printf("info depth 0 score cp 0\n");
+                        printf("info depth 1 score cp 0 pv %s\n", best_move_str);
                     }
 
-                    best_move = tb_move;
-                    skip_search = true;
+                    while (params.infinite && !params.uci_stop_flag);
+                    printf("bestmove %s\n", best_move_str);
+                    params.is_searching = false;
+                    return;
                 }
             }
         }
 
+        int max_depth = MAX_DEPTH;
+        if (params.depth_limit > 0 && params.depth_limit < MAX_DEPTH) {
+            max_depth = params.depth_limit;
+        }
 
+        // Iterative deepening loop
+        SearchResult result;
+        result.total_time = 1;
+        result.pv = principal_variation;
+        for (int d = 2; d <= max_depth; d++) {          
+            SearchInstance instance;
+            instance.last_timecheck = Timer::GetTimeInMs();
 
-        if (!skip_search) {
-            int max_depth = MAX_DEPTH;
-            if (params.depth_limit > 0 && params.depth_limit < MAX_DEPTH) {
-                max_depth = params.depth_limit;
+            auto iter_start_time = instance.last_timecheck;
+            int best_score = instance.PVS<PV_NODE, true>(pos, -ANKA_INFINITE, ANKA_INFINITE, d, params);
+            auto iter_end_time = Timer::GetTimeInMs();
+            auto delta_time = iter_end_time - iter_start_time;
+
+            if (params.uci_stop_flag) {
+                break;
             }
 
-            // Iterative deepening loop
-            SearchResult result;
-            result.total_time = 1;
-            result.pv = principal_variation;
-            for (int d = 1; d <= max_depth; d++) {          
-                SearchInstance instance;
-                instance.last_timecheck = Timer::GetTimeInMs();
+            best_move = instance.root_best_move;
+            int pv_length = g_trans_table.ExtractPV(pos, best_move, principal_variation, MAX_PV_LENGTH);
+                
+            result.best_score = best_score;
+            result.depth = d;
+            result.tb_hits += instance.tb_hits;
+            result.total_time += delta_time;
+            result.total_nodes += instance.nodes_visited;
+            result.nps = result.total_nodes / (result.total_time / 1000.0);
 
-                auto iter_start_time = instance.last_timecheck;
-                int best_score = instance.PVS<PV_NODE, true>(pos, -ANKA_INFINITE, ANKA_INFINITE, d, params);
-                auto iter_end_time = Timer::GetTimeInMs();
-                auto delta_time = iter_end_time - iter_start_time;
+            #ifdef STATS_ENABLED
+            result.fh = instance.num_fail_high;
+            result.fh_f = instance.num_fail_high_first;
+            #endif
 
-
-                if (params.uci_stop_flag) {
+            result.Print(pos, pv_length);
+                
+            if (params.check_timeup) {
+                if (delta_time > params.remaining_time * 5 >> 3) {
                     break;
                 }
-
-                best_move = instance.root_best_move;
-                int pv_length = g_trans_table.ExtractPV(pos, best_move, principal_variation, MAX_PV_LENGTH);
-                
-
-                result.best_score = best_score;
-                result.depth = d;
-                result.tb_hits += instance.tb_hits;
-                result.total_time += delta_time;
-                result.total_nodes += instance.nodes_visited;
-                result.nps = result.total_nodes / (result.total_time / 1000.0);
-
-                #ifdef STATS_ENABLED
-                result.fh = instance.num_fail_high;
-                result.fh_f = instance.num_fail_high_first;
-                #endif
-
-
-                result.Print(pos, pv_length);
-                
-                if (params.check_timeup) {
-                    if (delta_time > params.remaining_time * 5 >> 3) {
-                        break;
-                    }
-                }
             }
-        }
+        }     
 
-        // don't stop the search in infinite search mode unless a stop command is received
+        // don't return from the search in infinite search mode unless a stop command is received
         while (params.infinite && !params.uci_stop_flag);
 
-        if (best_move > 0) {
-            move::ToString(best_move, best_move_str);
-        }
-        else {
-            best_move_str[0] = '0';
-            best_move_str[1] = '0';
-            best_move_str[2] = '0';
-            best_move_str[3] = '0';
-            best_move_str[4] = '\0';
-        }
+        move::ToString(best_move, best_move_str);
         printf("bestmove %s\n", best_move_str);
         STATS(g_trans_table.PrintStatistics());
 
@@ -220,6 +210,9 @@ namespace anka {
         if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
             CheckTime(params);
         }
+
+        if (params.uci_stop_flag)
+            return alpha;
 
         if (pos.IsDrawn())
             return 0;
@@ -281,6 +274,9 @@ namespace anka {
             if (params.check_timeup && (nodes_visited & nodes_per_time_check) == 0) {
                 CheckTime(params);
             }
+
+            if (params.uci_stop_flag)
+                return alpha;
 
             if (pos.IsDrawn()) {
                 return 0;

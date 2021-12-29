@@ -1,12 +1,22 @@
 #include "move.hpp"
 
-int anka::move::ToString(Move move, char* result)
+void anka::move::ToString(Move move, char* result)
 {
+
+	if (move == move::NO_MOVE) {
+		result[0] = '0';
+		result[1] = '0';
+		result[2] = '0';
+		result[3] = '0';
+		result[4] = '\0';
+		return;
+	}
+
 	int from_file = GetFile(FromSquare(move));
 	int from_rank = GetRank(FromSquare(move));
 	int to_file = GetFile(ToSquare(move));
 	int to_rank = GetRank(ToSquare(move));
-	int str_len = 4;
+
 	PieceType promoted = NO_PIECE;
 	if (IsPromotion(move)) {
 		promoted = PromotedPiece(move);
@@ -32,8 +42,6 @@ int anka::move::ToString(Move move, char* result)
 
 		result[4] = piece;
 		result[5] = '\0';
-		str_len = 5;
-	}
 
-	return str_len;
+	}
 }

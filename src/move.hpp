@@ -149,7 +149,6 @@ namespace anka {
 			move |= (1 << 16);
 		}
 
-		// returns string length
-		int ToString(Move move, char* result);
+		void ToString(Move move, char* result);
 	};
 }
