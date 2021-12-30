@@ -11,10 +11,11 @@ You also need a relatively modern 64-bit CPU that supports instructions like Pop
 
 ## Features
 - Alpha-beta pruning with principal variation search
-- Null move pruning
+- Null move pruning, late move reductions, futility pruning
 - Transposition table
 - Heuristic evaluation function with material and mobility bonuses, piece square tables, isolated pawn and passed pawn evaluation etc.
 - Evaluation parameters tuned with Texel tuning
+- Syzygy tablebase support thanks to [Pyrrhic](https://github.com/AndyGrant/Pyrrhic/)
 
 ## Build Instructions
 Although Anka can be built for platforms other than Windows, only the Windows build has been tested. 
@@ -34,7 +35,7 @@ make config=Release
 For further instructions on using premake5, visit https://premake.github.io/docs/Using-Premake
 
 ## Other Notes
-Some features available in the UCI protocol (such as pondering, multi-pv and searching selected moves only) are not supported. Currently, there is also no support for tablebases and for an in-engine opening book.
+Some features available in the UCI protocol (such as pondering, multi-pv and searching selected moves only) are not supported.
 
 Anka implements some custom non-UCI commands for engine testing purposes. All custom commands are
 prefixed with anka_.
