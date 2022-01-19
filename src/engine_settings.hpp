@@ -4,6 +4,7 @@
 namespace anka {
 	struct EngineSettings {
 		static constexpr const char* ENGINE_NAME = "Anka";
+		static constexpr const char* ENGINE_VERSION = "0.6.3";
 		static constexpr const char* AUTHOR_NAME = "Mehmet Eren Yesilyurt";
 		static constexpr const char* ENGINE_INFO_STRING = "Anka Chess Engine, Mehmet Eren Yesilyurt";
 		static constexpr int DEFAULT_HASH_SIZE = 32;

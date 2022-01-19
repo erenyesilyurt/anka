@@ -121,8 +121,8 @@ namespace anka {
 
 	void uci::OnUci()
 	{
-		printf("id name Anka\n");
-		printf("id author Mehmet Eren Yesilyurt\n");
+		printf("id name %s %s\n", EngineSettings::ENGINE_NAME, EngineSettings::ENGINE_VERSION);
+		printf("id author %s\n", EngineSettings::AUTHOR_NAME);
 		printf("option name Hash type spin default %d min %d max %d\n",
 			EngineSettings::DEFAULT_HASH_SIZE,
 			EngineSettings::MIN_HASH_SIZE,
