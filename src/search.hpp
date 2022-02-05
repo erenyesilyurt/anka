@@ -5,6 +5,7 @@
 #include "engine_settings.hpp"
 #include "timer.hpp"
 #include "ttable.hpp"
+#include <atomic>
 
 
 namespace anka {

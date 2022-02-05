@@ -83,7 +83,8 @@ namespace anka {
         }
         else {
             SearchInstance instance;
-            int score = instance.PVS<PV_NODE, true>(pos, -ANKA_INFINITE, ANKA_INFINITE, 1, SearchParams{});
+            SearchParams temp_params;
+            int score = instance.PVS<PV_NODE, true>(pos, -ANKA_INFINITE, ANKA_INFINITE, 1, temp_params);
             best_move = instance.root_best_move;
 
             move::ToString(best_move, best_move_str);
