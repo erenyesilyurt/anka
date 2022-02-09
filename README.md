@@ -7,7 +7,7 @@ Anka is a command-line only tool. You need to have a UCI compatible chess GUI pr
 - [Scid vs. PC](http://scidvspc.sourceforge.net/)
 - [Tarrasch](https://www.triplehappy.com/)
 
-You also need a relatively modern 64-bit CPU that supports instructions like Popcnt.
+You also need a relatively modern 64-bit CPU that supports BMI1.
 
 ## Features
 - Alpha-beta pruning with principal variation search
