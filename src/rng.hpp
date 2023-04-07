@@ -52,8 +52,8 @@ namespace anka {
         }
 
         // C++ UniformRandomBitGenerator interface methods
-        force_inline static result_type min() { return C64(0); }
-        force_inline static result_type max() { return UINT64_MAX; }
+        force_inline constexpr static result_type min() { return C64(0); }
+        force_inline constexpr static result_type max() { return UINT64_MAX; }
         force_inline result_type operator()() { return rand64(); }
     private:
 
